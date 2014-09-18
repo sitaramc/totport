@@ -13,6 +13,7 @@ my $RC = "$ENV{HOME}/totport.rc";
 
 use lib "$ENV{HOME}/bin";    # location of Utils.pm
 our $KEYDIR   = "$ENV{HOME}/keydir";
+our $AKD      = "$ENV{HOME}/.ssh";
 our $AKF      = "$ENV{HOME}/.ssh/authorized_keys";
 our $TOTP     = "$ENV{HOME}/bin/totp";
 our $THIS     = "$ENV{HOME}/bin/totport";
@@ -45,6 +46,8 @@ $Data::Dumper::Indent   = 1;
 $Data::Dumper::Sortkeys = 1;
 
 use Utils;
+
+umask 0077;
 
 _logstart($LOGF);
 
@@ -196,6 +199,7 @@ sub rebuild_afk {
         $akt .= $pub;
     }
 
+    mkdir $AKD unless -d $AKD;
     _print( $AKF, $akt );
 }
 

@@ -29,6 +29,8 @@ use Digest::SHA qw(hmac_sha1 hmac_sha256 hmac_sha512);
 use HashLite;
 use Utils;
 
+umask 0077;
+
 _logstart($LOGF);
 
 # ----------------------------------------------------------------------
