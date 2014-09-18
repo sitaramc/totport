@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 79
+plan 65
 
 # setup
 
@@ -32,7 +32,6 @@ rm junk.?
 
 t/try-val 1 2 sha1 8 -1
     !ok
-    //home/\w+/bin/totp -c sita1 \d+/
     /no valid ports defined for 'sita1', why bother validating/
 
 ./totp -u sita1 last_ts =
@@ -77,7 +76,6 @@ rm -f ~/keydir/sita1.pub
 
 t/try-val 1 2 sha1 8 -1 1
     !ok
-    //home/\w+/bin/totp -c sita1 \d+/
     /open /home/\w+/keydir/sita1.pub failed: No such file or directory/
 
 cp t/keys/sita*.pub ~/keydir
@@ -104,12 +102,10 @@ rm junk.?
 
 t/try-val 1 3 sha1 8 -1 1
     ok
-    //home/\w+/bin/totp -c sita1 \d+/
     /validated 'sita1' from '1.2.1.1'/
 
 t/try-val 2 5 sha256 8 5 1
-    //home/\w+/bin/totp -c sita2 \d+/
-    /LOG not ok # sita2 \d+ failed at ts=1\d{9}/
+    /LOG not ok # sita2 \d+ failed at 1\d{9}/
     /totp not ok/
 
 cat ~/.ssh/authorized_keys
@@ -120,11 +116,9 @@ sleep 1
 
 t/try-val 1 3 sha1 8 0 2
     ok
-    //home/\w+/bin/totp -c sita1 \d+/
     /validated 'sita1' from '1.2.1.2'/
 
 t/try-val 2 5 sha256 8 -2 2
-    //home/\w+/bin/totp -c sita2 \d+/
     /validated 'sita2' from '1.2.2.2'/
 
 cat ~/.ssh/authorized_keys
@@ -135,12 +129,10 @@ sleep 1
 
 t/try-val 1 3 sha1 8 -1 3
     !ok
-    //home/\w+/bin/totp -c sita1 \d+/
     /LOG not ok # totp reused or older totp used/
     /totp not ok/
 
 t/try-val 2 5 sha256 8 0 3
-    //home/\w+/bin/totp -c sita2 \d+/
     /validated 'sita2' from '1.2.2.3'/
 
 cat ~/.ssh/authorized_keys
@@ -151,11 +143,9 @@ sleep 1
 
 t/try-val 1 3 sha1 8 1 4
     ok
-    //home/\w+/bin/totp -c sita1 \d+/
     /validated 'sita1' from '1.2.1.4'/
 
 t/try-val 2 5 sha256 8 -1 4
-    //home/\w+/bin/totp -c sita2 \d+/
     /LOG not ok # totp reused or older totp used/
     /totp not ok/
 
@@ -167,12 +157,10 @@ sleep 1
 
 t/try-val 1 3 sha1 8 3 5
     !ok
-    //home/\w+/bin/totp -c sita1 \d+/
-    /LOG not ok # sita1 \d+ failed at ts=\d+/
+    /LOG not ok # sita1 \d+ failed at \d+/
     /totp not ok/
 
 t/try-val 2 5 sha256 8 1 5
-    //home/\w+/bin/totp -c sita2 \d+/
     /validated 'sita2' from '1.2.2.5'/
 
 cat ~/.ssh/authorized_keys
@@ -182,13 +170,11 @@ cat ~/.ssh/authorized_keys
 sleep 1
 
 t/try-val 5 5 sha512 8 1 1
-    //home/\w+/bin/totp -c sita5 \d+/
     /validated 'sita5' from '1.2.5.1'/
 
 sleep 1
 
 t/try-val 5 5 sha512 8 0 2
-    //home/\w+/bin/totp -c sita5 \d+/
     /LOG not ok # totp reused or older totp used/
     /totp not ok/
 

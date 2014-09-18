@@ -21,7 +21,7 @@ ls ~/totp.log ~/totp.sqlite3
 
 tail -1 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV:/
+    /20..-..-..\...:..:.. \d+ == ARGV ==:/
 
 ./totp -a
     !ok
@@ -30,7 +30,7 @@ tail -1 ~/totp.log
 
 tail -2 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: -a/
+    /20..-..-..\...:..:.. \d+ == ARGV ==: -a/
     /20..-..-..\...:..:.. \d+ FATAL: need username/
 
 ./totp -a sita1
@@ -55,7 +55,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 tail -2 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: -a sita1/
+    /20..-..-..\...:..:.. \d+ == ARGV ==: -a sita1/
     /20..-..-..\...:..:.. \d+ FATAL: user 'sita1' already exists/
 
 hashlite -d ~/totp.sqlite3 dump
@@ -75,7 +75,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 tail -2 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: --del/
+    /20..-..-..\...:..:.. \d+ == ARGV ==: --del/
     /20..-..-..\...:..:.. \d+ FATAL: need username and secret/
 
 ./totp --del sita2
@@ -84,7 +84,7 @@ tail -2 ~/totp.log
 
 tail -2 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: --del sita2/
+    /20..-..-..\...:..:.. \d+ == ARGV ==: --del sita2/
     /20..-..-..\...:..:.. \d+ FATAL: need username and secret/
 
 ./totp --del sita1 ABCDEFGHIJKLMNOP/
@@ -100,7 +100,7 @@ tail -2 ~/totp.log
 
 tail -1 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: --del sita1 [A-Z2-7]+/
+    /20..-..-..\...:..:.. \d+ == ARGV ==: --del sita1 [A-Z2-7]+/
 
 hashlite -d ~/totp.sqlite3 dump
     ok
@@ -129,7 +129,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 tail -2 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: -u sita1 foo = bar/
+    /20..-..-..\...:..:.. \d+ == ARGV ==: -u sita1 foo = bar/
     /20..-..-..\...:..:.. \d+ FATAL: user 'sita1' does not exist/
 
 ./totp -u sita2 foo = bar
@@ -137,7 +137,7 @@ tail -2 ~/totp.log
 
 tail -1 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: -u sita2 foo = bar/
+    /20..-..-..\...:..:.. \d+ == ARGV ==: -u sita2 foo = bar/
 
 hashlite -d ~/totp.sqlite3 dump
     ok

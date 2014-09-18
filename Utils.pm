@@ -18,7 +18,7 @@ my $logfh;
 sub _logstart {
     $LOGF = shift;
     open( $logfh, ">>", $LOGF ) or die "$! on open '$LOGF'";
-    _log("ARGV:", @ARGV);
+    _log("== ARGV ==:", @ARGV);
 }
 
 sub _warn {

@@ -123,7 +123,7 @@ t/mock.pl 1234567890  ./totp    -c sita2 91819424
 
 t/mock.pl 20000000000 ./totp    -c sita2 90698825
     !ok
-    /LOG not ok # sita2 90698825 failed at ts=20000000000/
+    /LOG not ok # sita2 90698825 failed at 20000000000/
 
 t/mock.pl 2000000000  ./totp    -c sita2 90698825
     ok

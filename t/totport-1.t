@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 74
+plan 59
 
 # setup
 
@@ -29,7 +29,7 @@ cp t/totport.rc.sample ~/totport.rc
 
 tail -4 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV:/
+    /20..-..-..\...:..:.. \d+ == ARGV ==:/
 
 SSH_CONNECTION="1.2.3.4 4444 2.3.4.5 22" ./totport
     !ok
@@ -37,9 +37,8 @@ SSH_CONNECTION="1.2.3.4 4444 2.3.4.5 22" ./totport
 
 tail -4 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV:/
+    /20..-..-..\...:..:.. \d+ == ARGV ==:/
     /20..-..-..\...:..:.. \d+ SSH_CONNECTION 1.2.3.4 4444 2.3.4.5 22/
-    /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND /
     /20..-..-..\...:..:.. \d+ FATAL: need command or user name/
 
 SSH_ORIGINAL_COMMAND="1.2.3.4 4444 2.3.4.5 22" ./totport
@@ -48,8 +47,7 @@ SSH_ORIGINAL_COMMAND="1.2.3.4 4444 2.3.4.5 22" ./totport
 
 tail -4 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV:/
-    /20..-..-..\...:..:.. \d+ SSH_CONNECTION /
+    /20..-..-..\...:..:.. \d+ == ARGV ==:/
     /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND 1.2.3.4 4444 2.3.4.5 22/
     /20..-..-..\...:..:.. \d+ FATAL: need command or user name/
 
@@ -58,10 +56,7 @@ tail -4 ~/totport.log
 
 tail -4 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: rebuild/
-    /20..-..-..\...:..:.. \d+ SSH_CONNECTION /
-    /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND /
-    /20..-..-..\...:..:.. \d+ rebuilding at 1\d{9} /
+    /20..-..-..\...:..:.. \d+ == ARGV ==: rebuild/
 
 wc -c ~/.ssh/authorized_keys
     ok
@@ -90,10 +85,7 @@ cut -c1-120 ~/.ssh/authorized_keys
 
 tail -5 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: sita0/
-    /20..-..-..\...:..:.. \d+ SSH_CONNECTION /
-    /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND /
-    /20..-..-..\...:..:.. \d+ rebuilding at 1\d{9} /
+    /20..-..-..\...:..:.. \d+ == ARGV ==: sita0/
     /20..-..-..\...:..:.. \d+ FATAL: huh?/
 
 ./totport sita0 123
@@ -103,9 +95,7 @@ tail -5 ~/totport.log
 
 tail -5 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: sita0 123/
-    /20..-..-..\...:..:.. \d+ SSH_CONNECTION /
-    /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND /
+    /20..-..-..\...:..:.. \d+ == ARGV ==: sita0 123/
     /20..-..-..\...:..:.. \d+ valid access user=sita0 validated-ip=123 from=/
     /20..-..-..\...:..:.. \d+ FATAL: totp error/
 
@@ -115,10 +105,7 @@ tail -5 ~/totport.log
 
 tail -5 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: sita1/
-    /20..-..-..\...:..:.. \d+ SSH_CONNECTION /
-    /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND /
-    /20..-..-..\...:..:.. \d+ rebuilding at 1\d{9} /
+    /20..-..-..\...:..:.. \d+ == ARGV ==: sita1/
     /20..-..-..\...:..:.. \d+ FATAL: huh?/
 
 ./totport sita1 123
@@ -126,9 +113,7 @@ tail -5 ~/totport.log
 
 tail -5 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ ARGV: sita1 123/
-    /20..-..-..\...:..:.. \d+ SSH_CONNECTION /
-    /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND /
+    /20..-..-..\...:..:.. \d+ == ARGV ==: sita1 123/
     /20..-..-..\...:..:.. \d+ valid access user=sita1 validated-ip=123 from=/
     /20..-..-..\...:..:.. \d+ ...sleeping 1200/
 

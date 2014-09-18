@@ -59,8 +59,8 @@ _die "rc file missing or doesn't have what I want" unless $port_expander{NONE};
 my $CT = time();
 
 # first, log SSH env stuff
-_log( "SSH_CONNECTION",       $ENV{SSH_CONNECTION}       || '' );
-_log( "SSH_ORIGINAL_COMMAND", $ENV{SSH_ORIGINAL_COMMAND} || '' );
+_log( "SSH_CONNECTION",       $ENV{SSH_CONNECTION}       ) if $ENV{SSH_CONNECTION};
+_log( "SSH_ORIGINAL_COMMAND", $ENV{SSH_ORIGINAL_COMMAND} ) if $ENV{SSH_ORIGINAL_COMMAND};
 
 my $conn_ip = conn_ip();
 
@@ -83,10 +83,12 @@ if ( $cmd eq 'rebuild' ) {
 my $user = $cmd;
 my $ip = shift || 0;
 
-if ($ip) {
+if ($ip and not $ENV{SSH_ORIGINAL_COMMAND}) {
     # this is an IP-validated run.  Port forwards are already in place.
     # We're not expected to do anything, and indeed if the user runs 'ssh
     # -N' we won't even run!
+
+    say STDERR "hi $user, you may use your forwarded ports now";
 
     _log "valid access user=$user validated-ip=$ip from=$conn_ip";
 
@@ -103,7 +105,6 @@ if ($ip) {
 # user supplied a otp ("ssh totport@host val 12345678")
 if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
     my $otp = $1;
-    say STDERR "$TOTP -c $user $otp";
     if ( system( $TOTP, "-c", $user, $otp ) ) {
         # note that "true" from system() means things *failed*!
         _log("invalidating '$user'");
@@ -120,7 +121,7 @@ if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
 }
 
 rebuild_afk();
-_die "huh?";
+_die "huh? ($user, I don't know what you're saying!)";
 
 # ----------------------------------------------------------------------
 
@@ -157,7 +158,6 @@ sub validate {
 
 sub rebuild_afk {
     my $CT  = time();
-    _log "rebuilding at $CT (" . localtime() . ")";
     my $akt = '';       # text of new authorized_keys file
 
     mkdir $VAL_KEYS;
@@ -170,7 +170,7 @@ sub rebuild_afk {
             next;
         }
         if ( $CT > $vkd ) {
-            system("rm -rf $VAL_KEYS/$vkd");
+            map { chomp; _log($_); } `rm -vrf $VAL_KEYS/$vkd`;
             next;
         }
 

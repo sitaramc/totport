@@ -106,8 +106,8 @@ delete arbitrary keys added by "-u", and so on.
         _die "user '$user' already exists" if tu_exists($user);
 
         # generate random secret
-        my $secret = MIME::Base32::encode(`openssl rand 32`);
-        say STDERR "secret = $secret";
+        my $secret = MIME::Base32::encode(`openssl rand 20`);
+        say STDERR "secret = " . breakup($secret);
 
         # add to db.  We just use defaults for the other parameters; the admin
         # should use '-u' later if needed.
@@ -179,7 +179,7 @@ delete arbitrary keys added by "-u", and so on.
                 exit 0;
             }
         }
-        say "LOG not ok # $user $totp failed at ts=$CT";
+        say "LOG not ok # $user $totp failed at $CT";
         exit 1;
     }
 
@@ -303,3 +303,10 @@ delete arbitrary keys added by "-u", and so on.
         }
     }
 }
+
+{
+    sub breakup {
+        return join " ", (+shift =~ /.{1,4}/g);
+    }
+}
+
