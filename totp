@@ -1,0 +1,303 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# totp code munged from Authen::OATH, removing all the bigint and moose gunk,
+# and hardcoding a bunch of things because we only care about compat with
+# google authenticator (the android app), which appears to be fixed in terms
+# of these choices.
+
+# ----------------------------------------------------------------------
+# LOCAL CONFIGURATION ITEMS
+
+use lib "$ENV{HOME}/bin";    # location of HashLite.pm and Utils.pm
+my $DBNAME    = "$ENV{HOME}/totp.sqlite3";    # location of main database
+my $TABLENAME = "totp_users";                 # our table in the database
+my $LOGF      = "$ENV{HOME}/totp.log";
+
+# ----------------------------------------------------------------------
+
+use 5.10.0;
+use Data::Dumper;
+$Data::Dumper::Terse    = 1;
+$Data::Dumper::Indent   = 1;
+$Data::Dumper::Sortkeys = 1;
+
+use MIME::Base32 qw(RFC);
+use Digest::SHA qw(hmac_sha1 hmac_sha256 hmac_sha512);
+
+use HashLite;
+use Utils;
+
+_logstart($LOGF);
+
+# ----------------------------------------------------------------------
+
+my $op = shift || '-h';
+usage() if $op eq '-h' or $op !~ /^-/;
+
+my %dt = (
+    '-c'    => \&check_totp,
+    '-s'    => \&show_totp,
+
+    '-a'    => \&add_user,
+    '--del' => \&del_user,
+    '-u'    => \&upd_user,
+
+    '-d'    => \&_dump,
+);
+
+usage() unless exists $dt{$op};
+
+# ----------------------------------------------------------------------
+
+my $CT = time();
+
+opendb();
+$dt{$op}->(@ARGV);
+exit 0;    # if the operation code doesn't
+
+# ----------------------------------------------------------------------
+
+sub usage {
+    # I don't like POD.  This is not up for discussion.
+
+    say "\ntotp -- everything to do with TOTP, at the command line";
+
+    say '
+    totp -c username TOTP       # check totp for user
+    totp -s secret [...]        # show totp for secret [seconds] [window] [alg] [digits]
+
+    totp -a username            # add user, generates and prints secret
+    totp --del username         # delete user
+    totp -u username foo = bar  # sets arbitrary key/value for user
+    totp -d username [field]    # dump one/all fields for user
+    totp -d                     # dump all data for all users
+
+Notes:
+
+  * keys that have meaning to totp are "ts_win", the timestep window, which is
+    the number of 30-second intervals before and after the current time that
+    the TOTP should be checked against, and "last_ts", the last timestep used
+    by this user.  The "check" function uses this to prevent older TOTPs from
+    being offered.
+
+  * You can show TOTPs for the current time by default, but you can show it for
+    other times, and for larger timestep windows.
+
+Please see the documentation for more details on all this, such as how to
+delete arbitrary keys added by "-u", and so on.
+';
+
+    exit 1;
+}
+
+# ----------------------------------------------------------------------
+
+# user management
+
+{
+
+    sub add_user {
+        my $user = shift or _die "need username";
+
+        _die "user '$user' already exists" if tu_exists($user);
+
+        # generate random secret
+        my $secret = MIME::Base32::encode(`openssl rand 32`);
+        say STDERR "secret = $secret";
+
+        # add to db.  We just use defaults for the other parameters; the admin
+        # should use '-u' later if needed.
+        tu_set( $user, 'secret', $secret );
+        tu_set( $user, 'ts_win', 1 );
+
+        # qrcode anyone?
+        my $hn = `hostname -s`; chomp $hn;
+        say STDERR "you can run this or similar commands to get a QR code on screen:\n    qrencode -s16 -m1 -o $user.png otpauth://totp/$user\@$hn?secret=$secret";
+    }
+
+    sub del_user {
+        my $user = shift;
+        my $secret = shift or _die "need username and secret";
+
+        _die "user '$user' does not exist" unless tu_exists($user);
+        _die "invalid user/secret" unless $secret eq tu_get( $user, 'secret' );
+
+        tu_del($user);
+    }
+
+    sub upd_user {
+        my $user = shift;
+        my $key  = shift;
+        my $val  = shift || '';
+        usage() unless $val eq '=';
+        $val = shift;
+
+        _die "user '$user' does not exist" unless tu_exists($user);
+
+        # don't let him delete the keys that totp cares about
+        _die "sorry Dave, I can't let you do that" if not $val and ( $key eq 'secret' or $key eq 'ts_win' );
+
+        tu_set( $user, $key, $val );
+    }
+}
+
+# ----------------------------------------------------------------------
+
+# totp core
+
+{
+
+    sub check_totp {
+        my ( $user, $totp ) = @_;
+        _die "user '$user' does not exist" unless tu_exists($user);
+
+        my $secret = tu_get( $user, 'secret' );
+        my $tsw    = tu_get( $user, 'ts_win' );
+        my $alg    = tu_get( $user, 'alg' ) || 'sha1';
+        my $digits = tu_get( $user, 'digits' ) || 8;
+
+        # find, within the window, which timestep produced the totp
+        for my $ts ( -$tsw .. $tsw ) {
+            if ( $totp == totp( $secret, $CT + $ts * 30, $alg, $digits ) ) {
+
+                # the timestep should be strictly greater than the last
+                # timestep this user used
+
+                my $this_ts = ( int( $CT / 30 ) + $ts );
+                unless ( $this_ts > ( tu_get( $user, 'last_ts' ) || 0 ) ) {
+                    say "LOG not ok # totp reused or older totp used";
+                    exit 1;
+                }
+
+                # all ok; save "last timestep" and return OK
+                tu_set( $user, 'last_ts', $this_ts );
+
+                exit 0;
+            }
+        }
+        say "LOG not ok # $user $totp failed at ts=$CT";
+        exit 1;
+    }
+
+    sub show_totp {
+        my $s = shift or _die "need secret [seconds] [window] [alg] [digits]";
+        my $t = shift || time();
+        my $w = shift || 0;        # window in timesteps
+        my $a = shift || 'sha1';
+        my $d = shift || 8;
+
+        # if he wants just one
+        if ( $w == 0 ) {
+            say totp( $s, $t, $a, $d );
+            return;
+        }
+
+        # he wants a range of them
+        for my $x ( -$w .. $w ) {
+            say "$x\t", totp( $s, $t + $x * 30, $a, $d );
+        }
+
+        exit 0;
+    }
+
+    sub totp {
+        # get the secret into binary form
+        my $secret = shift;
+        my $epoch_seconds  = shift || 0;
+        my $alg    = shift || 'sha1';
+        my $digits = shift || 8;
+
+        $secret = MIME::Base32::decode($secret);
+
+        # convert time to timesteps then to 16-digits of hex
+        my $steps = int( $epoch_seconds / 30 );
+        $steps = sprintf "%016x", $steps;
+
+        # get the bin code for the timestep
+        my $bin_code = join( "", map chr hex, $steps =~ /(..)/g );
+
+        my $hash;
+        $alg eq 'sha1' and $hash = hmac_sha1( $bin_code, $secret );
+        $alg eq 'sha256' and $hash = hmac_sha256( $bin_code, $secret );
+        $alg eq 'sha512' and $hash = hmac_sha512( $bin_code, $secret );
+
+        my $offset = hex substr unpack( "H*" => $hash ), -1;
+        my $dt = unpack "N" => substr $hash, $offset, 4;
+        $dt &= 0x7fffffff;
+
+        return $dt % 10**$digits;
+    }
+}
+
+# ----------------------------------------------------------------------
+
+{
+    my $db;
+
+    sub opendb {
+        unless ( -f $DBNAME ) {
+            say STDERR "table does not exist; creating...";
+            system("echo 'create table $TABLENAME (k text primary key, t int, v text);' | sqlite3 $DBNAME");
+        }
+
+        $db = HashLite->new($DBNAME);
+    }
+
+    sub tu_exists {
+        my $user = shift;
+        return $db->_exists( $TABLENAME, $user );
+    }
+
+    sub tu_del {
+        my $user = shift;
+        $db->set( $TABLENAME, $user, undef );
+    }
+
+    sub tu_get {
+        my ( $user, $key ) = @_;
+
+        return '' unless $db->_exists( $TABLENAME, $user );
+        my $u = $db->get( $TABLENAME, $user );
+        return $u->{$key} || undef;
+    }
+
+    sub tu_set {
+        my ( $user, $key, $value ) = @_;
+
+        my $u = $db->get( $TABLENAME, $user );
+
+        if ( defined $value ) {
+            $u->{$key} = $value;
+        } else {
+            delete $u->{$key};
+        }
+
+        $db->set( $TABLENAME, $user, $u );
+        return;
+    }
+
+    sub _dump {
+        my $user = shift || '';
+        my $field = shift || '';
+
+        if ($user) {
+            _die "user '$user' does not exist" unless tu_exists($user);
+            my $u = $db->get( $TABLENAME, $user );
+            if ($field) {
+                print $u->{$field} || '';
+                # note, we don't "say" here, only "print".  Avoids need to
+                # chomp in totport ;-)
+            } else {
+                say Dumper $u;
+            }
+        } else {
+            my $u = $db->get( 'keys', $TABLENAME );
+            for ( sort @$u ) {
+                say "user:\t$_";
+                _dump($_);
+            }
+        }
+    }
+}

@@ -1,0 +1,210 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# ----------------------------------------------------------------------
+# LOCAL CONFIGURATION
+
+# mandatory:
+
+my $RC = "$ENV{HOME}/totport.rc";
+
+# the rest have reasonable defaults here:
+
+use lib "$ENV{HOME}/bin";    # location of Utils.pm
+our $KEYDIR   = "$ENV{HOME}/keydir";
+our $AKF      = "$ENV{HOME}/.ssh/authorized_keys";
+our $TOTP     = "$ENV{HOME}/bin/totp";
+our $THIS     = "$ENV{HOME}/bin/totport";
+our $LOGF     = "$ENV{HOME}/totport.log";
+our $VAL_KEYS = "$ENV{HOME}/validated_keys";
+
+# but can be overridden by placing lines similar to those in the rc file.
+# That is, they are all optional in the rc file.
+
+# PLEASE MAKE SURE ALL PATHS ARE ABSOLUTE; they get used when the process is
+# often in some other directory!
+
+our %port_expander;
+
+# The rc file, and one specific entry within it, are mandatory.  Please see
+# t/totport.rc.sample for more info.
+
+# now pull in the rc file
+do $RC;
+
+# this is non-negotiable :)
+my $AKOPTIONS = "no-X11-forwarding,no-agent-forwarding,no-pty";
+
+# ----------------------------------------------------------------------
+
+use 5.10.0;
+use Data::Dumper;
+$Data::Dumper::Terse    = 1;
+$Data::Dumper::Indent   = 1;
+$Data::Dumper::Sortkeys = 1;
+
+use Utils;
+
+_logstart($LOGF);
+
+_die "rc file missing or doesn't have what I want" unless $port_expander{NONE};
+
+# ----------------------------------------------------------------------
+# main
+
+my $CT = time();
+
+# first, log SSH env stuff
+_log( "SSH_CONNECTION",       $ENV{SSH_CONNECTION}       || '' );
+_log( "SSH_ORIGINAL_COMMAND", $ENV{SSH_ORIGINAL_COMMAND} || '' );
+
+my $conn_ip = conn_ip();
+
+# dispatch
+
+my $cmd = shift or _die "need command or user name";
+
+if ( $cmd eq 'rebuild' ) {
+    rebuild_afk();
+    exit 0;
+}
+
+# any other local commands go here
+
+# ...
+
+# from here, it's a remote invocation by a user, which means what we thought
+# was $cmd till now is actually a user name :)
+
+my $user = $cmd;
+my $ip = shift || 0;
+
+if ($ip) {
+    # this is an IP-validated run.  Port forwards are already in place.
+    # We're not expected to do anything, and indeed if the user runs 'ssh
+    # -N' we won't even run!
+
+    _log "valid access user=$user validated-ip=$ip from=$conn_ip";
+
+    my $use_for = `$TOTP -d $user use_for` || 20;
+    _die 'totp error' if ${^CHILD_ERROR_NATIVE};
+    my $sleep = $use_for * 60;
+
+    _log "...sleeping $sleep";
+    sleep $sleep unless $ENV{TOTPORT_TEST};
+
+    exit 0;
+}
+
+# user supplied a otp ("ssh totport@host val 12345678")
+if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
+    my $otp = $1;
+    say STDERR "$TOTP -c $user $otp";
+    if ( system( $TOTP, "-c", $user, $otp ) ) {
+        # note that "true" from system() means things *failed*!
+        _log("invalidating '$user'");
+        rebuild_afk();
+        _die "totp not ok";
+    } else {
+        # ...and false is "OK"
+        _log("validating '$conn_ip' for '$user' with totp '$otp'");
+        validate( $user, $conn_ip );
+        say STDERR "validated '$user' from '$conn_ip'";
+        rebuild_afk();
+        exit 0;
+    }
+}
+
+rebuild_afk();
+_die "huh?";
+
+# ----------------------------------------------------------------------
+
+sub validate {
+    my $user    = shift;
+    my $conn_ip = shift;
+
+    mkdir  $VAL_KEYS;
+    _chdir $VAL_KEYS;
+
+    for my $ev ( glob("*/$user.pub") ) {
+        _warn "removing existing validation '$ev'";
+        unlink $ev;
+    }
+
+    # "use within 5 minutes" translates to "use by time() + 300 seconds"
+    my $use_by = time() + ( `$TOTP -d $user use_within` || 5 ) * 60;
+
+    # strings like "MAIL", "GIT1", or "MAIL,GIT1" (which contains both), etc...
+    my $ports = `$TOTP -d $user ports`;
+    _die "no valid ports defined for '$user', why bother validating?" unless $ports;
+    _die "invalid format '$ports'" unless $ports =~ /^(\w+)(,\w+)*$/;
+
+    # expand port symbolic names into actual names
+    $ports =~ s/(\w+)/$port_expander{$1}/g;
+
+    # generate the option string
+    my $option = "command=\"$THIS $user $conn_ip\",from=\"$conn_ip\",no-X11-forwarding,no-agent-forwarding,no-pty,$ports";
+
+    my $pub = slurp("$KEYDIR/$user.pub");
+    mkdir $use_by;    # yes Virginia, a directory name like '1410764927'
+    _print( "$use_by/$user", "$option $pub" );
+}
+
+sub rebuild_afk {
+    my $CT  = time();
+    _log "rebuilding at $CT (" . localtime() . ")";
+    my $akt = '';       # text of new authorized_keys file
+
+    mkdir $VAL_KEYS;
+    _chdir $VAL_KEYS;
+
+    for my $vkd ( sort glob("*") ) {
+        next unless $vkd =~ /^\d{10}$/;    # safe for another 272 years :)
+        unless ( -d "$VAL_KEYS/$vkd" ) {
+            _warn "'$VAL_KEYS/$vkd' exists but is not a directory!";
+            next;
+        }
+        if ( $CT > $vkd ) {
+            system("rm -rf $VAL_KEYS/$vkd");
+            next;
+        }
+
+        # now rebuild the ak file
+        chdir "$VAL_KEYS/$vkd";
+
+        for my $vk (sort glob("*")) {
+            $akt .= slurp($vk);
+        }
+    }
+
+    mkdir $KEYDIR;
+    _chdir $KEYDIR;
+    my $option = "command=\"$THIS %USER\",no-X11-forwarding,no-agent-forwarding,no-pty,$port_expander{NONE}";
+
+    for my $pkf ( sort glob("*.pub") ) {
+        my $pub = slurp($pkf);
+        $pub .= "\n" unless $pub =~ /\n$/;
+
+        my $user = $pkf;
+        $user =~ s/\.pub$//;    # basename is username; no fancy gitolite tricks here!
+
+        $pub = "$option $pub";
+        $pub =~ s/%USER/$user/;
+
+        $akt .= $pub;
+    }
+
+    _print( $AKF, $akt );
+}
+
+# ----------------------------------------------------------------------
+
+# service routines
+
+sub conn_ip {
+    my $ip;
+    ( $ip = $ENV{SSH_CONNECTION} || '' ) =~ s/ .*//;
+    return $ip;
+}

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# ARGS: user window alg digits index   OTPseqno
+#       $1   $2     $3  $4     $5      $6
+
+[ -n "$1" ] || { grep ^..ARGS $0; exit 1; }
+
+[ -f junk.$1 ] || ./totp -s `./totp -d sita$1 secret` 0 $2 $3 $4 | cut -f2 > junk.$1
+
+(( index = $2 + $5 + 1 ))
+
+otp=$(sed -n "${index}p" < junk.$1)
+
+SSH_ORIGINAL_COMMAND="val $otp" SSH_CONNECTION="1.2.$1.$6 1 2 3" ./totport sita$1

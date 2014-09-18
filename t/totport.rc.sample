@@ -1,0 +1,32 @@
+# This file is in perl syntax.  But you do NOT need to know perl to edit it --
+# just mind the commas, single and double quotes, and in lists, make sure the
+# brackets and braces stay matched up!
+
+# (Tip: perl allows a comma after the last item in a list also!)
+
+#   1.  the port expander (mandatory; see below for details)
+
+    %port_expander = (
+
+        # The NONE port is mandatory.  it should describe some  port that the
+        # user already has access to, (the one in this sample file is probably
+        # good enough, unless you're running ssh itself on a non-standard port
+        # and wish to keep 22 hidden).
+
+        NONE => 'permitopen="127.0.0.1:22"',
+
+        # The rest of these are here as examples -- replace them with your
+        # own.  The names (MAIL, GIT1, etc) are also upto you, but stick to
+        # word characters (a-z, 0-9, underscores).
+
+        # please mind the syntax!  Single quotes for the entire option, double
+        # quotes *within* the option for "IP:port" information, ending with a
+        # comma.
+
+        MAIL => 'permitopen="192.168.1.1:587",permitopen="192.168.149.1:993"',
+        GIT1 => 'permitopen="192.168.1.2:22"',
+        GIT2 => 'permitopen="192.168.1.3:22"',
+        WEB1 => 'permitopen="192.168.1.4:80",permitopen="192.168.1.4:443"',
+    );
+
+#   2.  other variables (all optional)
