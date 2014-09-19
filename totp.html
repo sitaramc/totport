@@ -1,0 +1,113 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>generalised TOTP API from the command line</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style>
+      body        { background: #fff; text-color: #000; margin-left:  40px;   font-size:  0.9em;  font-family: arial; }
+  
+      code        { font-size:    1.1em;  background:  #ddf; text-color: #000; }
+      pre         { margin-left:  2em;    background:  #ddf; text-color: #000; }
+      pre code    { font-size:    1.1em;  background:  #ddf; text-color: #000; }
+  
+      td          { vertical-align: top }
+  
+      .red        { color: red }
+      .blue       { color: blue }
+      .green      { color: green }
+      .gray       { color: gray }
+      .pink       { color: pink }
+  
+      .box        { background-color:#e0e0e0 }
+      .bg-red     { background-color:#ffe0e0 }
+      .bg-green   { background-color:#e0ffe0 }
+      .bg-blue    { background-color:#e0e0ff }
+  
+      /* couldn't resist the name! */
+      .wd40       { width: 40% !important }
+  
+      .box-l      { float: left;  padding: 0px 0.5em; background-color: #e0e0e0; width:25%; margin-right: 4px; }
+      .box-r      { float: right; padding: 0px 0.5em; background-color: #e0e0e0; width:25%; margin-left:  4px; }
+  
+      .fl-l       { float: left;  padding: 0px 0.5em;                                       margin-right: 4px; }
+      .fl-r       { float: right; padding: 0px 0.5em;                                       margin-left:  4px; }
+  
+      .sidebar {
+          margin-left: 4px;
+          width: 25%;
+          float: right;
+          border: 4px solid #fff;
+      }
+  
+  </style>
+  <style>
+      h1          { background: #ffb; text-color: #000; margin-left: -30px;   border-top:    5px  solid #ccc; }
+      h2          { background: #ffb; text-color: #000; margin-left: -20px;   border-top:    3px  solid #ddd; }
+      h3          { background: #ffb; text-color: #000; margin-left: -10px; }
+      h4          { background: #ffb; text-color: #000; }
+  </style>
+</head>
+<body>
+<div id="header">
+<h1 class="title">generalised TOTP API from the command line</h1>
+</div>
+<h1 id="the-api"><span class="header-section-number">1</span> The API</h1>
+<p>The <code>totp</code> program, which is part of <code>totport</code> can be used as a TOTP backend for any application that can make system() calls.</p>
+<p>The API is simple:</p>
+<ul>
+<li>add a user: <code>totp -a username</code></li>
+<li>add/update a user's base-32 secret: <code>totp -u username secret = ABCDEF...</code></li>
+<li><p>delete a user: <code>totp --del username</code></p></li>
+<li><p>check a user+totp combo: <code>totp -c username totp-code</code></p></li>
+</ul>
+<p>Each of these commands return something starting with &quot;ok&quot; or &quot;not ok&quot;, making it easy to parse for top level errors.</p>
+<p>That's basically it.</p>
+<p>In addition, if you need to store small bits of information about users, you can piggy back on totp's sqlite database. For example, let us say you wanted to keep a count of how many times a user sent a valid TOTP code, and how many times they sent in the wrong code.</p>
+<p>The API for this is:</p>
+<ul>
+<li>dump one database field of one user: <code>totp -d username fieldname</code></li>
+<li>update one database field of one user: <code>totp -u username fieldname = value</code></li>
+</ul>
+<p>The &quot;dump&quot; operation prints the value without a newline at the end, which is sometimes useful.</p>
+<p>Here's a quick example of counting consecutive failed validations from any user, and if count crosses 3, raise an alarm of some kind:</p>
+<pre><code>if totp -c $user $totp
+then
+    # reset failure count
+    totp -u $user failure_count = 0
+else
+    # failed...
+    f=`totp -d $user failure_count`
+    (( f = f + 1 ))
+    totp -u $user failure_count = $f
+
+    [[ $f -ge 3 ]] &amp;&amp; echo &gt;&amp;2 &quot;BY TOUTATIS!  THE SKY IS FALLING ON OUR HEADS!!&quot;
+fi</code></pre>
+<p>Notice how we just arbitrarily declared and used a field called &quot;failure_count&quot; in each user's record in the database that <code>totp</code> maintains. This is especially useful if you have small amounts of data, and your app doesn't already have its own database.</p>
+<h1 id="quirkstodo"><span class="header-section-number">2</span> QUIRKS/TODO</h1>
+<ol style="list-style-type: decimal">
+<li><p>The &quot;add a user&quot; currently shows the totp secret on screen in a message that gives the user 3 options (see Appendix 1 for the message text). This is so because at present it is designed to be run from <code>totport</code>'s 'enroll' command. However, it would be a trivial matter to separate that out.</p></li>
+<li><p>Deleting a user currently requires also supplying the user's secret, in order to prevent accidental deletes of someone else. I'm not sure this is really needed, so I might get rid of it, or replace it with code that saves a copy of the dump for the user, or whatever... That would make the delete easier to do.</p></li>
+</ol>
+<h1 id="appendix-1----output-from-adding-a-user"><span class="header-section-number">3</span> Appendix 1 -- output from adding a user</h1>
+<p>This is the output when a user is added.</p>
+<pre><code>A new secret has been generated for user 'alice'.
+
+There are 3 ways in which you can get this into your Android mobile or tab,
+summarised below.  You may need to read the &quot;securely downloading the TOTP
+secret&quot; section in http://gitolite.com/totport for more details.  Also, your
+admin may have given you actual IP addresses or port numbers.
+
+Option 1: run the ssh command and then browse to the URL:
+    ssh -L 3536:127.0.0.1:3536 totport@host qrcode
+    http://127.0.0.1:3536/qr/ONRR3OR7EACRIJ6LMBO6232ZKSQLH3IP
+
+Option 2: run:
+    qrencode -tANSI -m1 -o- otpauth://totp/alice@sita-lt?secret=ONRR3OR7EACRIJ6LMBO6232ZKSQLH3IP
+
+Option 3: type in:
+    ONRR 3OR7 EACR IJ6L MBO6 232Z KSQL H3IP</code></pre>
+</body>
+</html>
