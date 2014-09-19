@@ -143,8 +143,8 @@ sub validate {
         unlink $ev;
     }
 
-    # "use within 5 minutes" translates to "use by time() + 300 seconds"
-    my $use_by = time() + ( `$TOTP -d $user use_within` || 5 ) * 60;
+    # "use within 20 minutes" translates to "use by time() + 1200 seconds"
+    my $use_by = time() + ( `$TOTP -d $user use_within` || 20 ) * 60;
 
     # strings like "MAIL", "GIT1", or "MAIL,GIT1" (which contains both), etc...
     my $ports = `$TOTP -d $user ports`;
