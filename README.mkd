@@ -20,8 +20,10 @@ in protecting remote access (i.e., access from *outside* your network), then
 services.  `totport` works by creating an additional authorized keys line with
 appropriate "from" and "permitopen" options, when it receives a valid TOTP
 passcode.  Subsequent connections will permit forwarding to those hosts and
-ports.  (The basic idea is inspired by Konstantin's recent addition of
-[2-factor authentication][gl2fa] to [gitolite][gl].  Thanks Konstantin!)
+ports.  The basic idea (of having a validate step making some kind of a
+backend change to enable the next action) is inspired by Konstantin's recent
+addition of [2-factor authentication][gl2fa] to [gitolite][gl].  Thanks
+Konstantin!
 
 [gl]: http://gitolite.com
 [gl2fa]: https://github.com/mricon/totp-cgi/tree/master/contrib/gitolite
