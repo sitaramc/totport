@@ -102,6 +102,12 @@ if ($ip and not $ENV{SSH_ORIGINAL_COMMAND}) {
     exit 0;
 }
 
+# user is enrolling
+if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) eq 'enroll' ) {
+    system( $TOTP, "-a", $user ) and exit 1;
+    exit 0;
+}
+
 # user supplied a otp ("ssh totport@host val 12345678")
 if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
     my $otp = $1;
