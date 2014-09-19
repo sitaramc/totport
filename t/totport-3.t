@@ -15,14 +15,14 @@ rm -rf junk.? ~/validated_keys/*
 
 # run
 
-t/try-val 1 3 sha1 8 0 1
+t/try-val 1 3 sha1 0 1
     ok
     /validated 'sita1' from '1.2.1.1'/
 
 sleep 5
     ok
 
-t/try-val 2 5 sha256 8 -2 2
+t/try-val 2 5 sha256 -2 2
     ok
     /validated 'sita2' from '1.2.2.2'/
 

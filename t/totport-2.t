@@ -30,7 +30,7 @@ rm junk.?
 ./totp -u sita1 ports =
     ok
 
-t/try-val 1 2 sha1 8 -1
+t/try-val 1 2 sha1 -1
     !ok
     /no valid ports defined for 'sita1', why bother validating/
 
@@ -74,7 +74,7 @@ rm junk.?
 rm -f ~/keydir/sita1.pub
     ok
 
-t/try-val 1 2 sha1 8 -1 1
+t/try-val 1 2 sha1 -1 1
     !ok
     /open /home/\w+/keydir/sita1.pub failed: No such file or directory/
 
@@ -92,19 +92,19 @@ rm junk.?
 #   sita2: ts_win = 2, alg = sha256
 #   sita5: ts_win = 5, alg = sha512
 
-# ARGS: user window alg digits index   OTPseqno
-#       $1   $2     $3  $4     $5      $6
+# ARGS: user window alg index   OTPseqno
+#       $1   $2     $3  $4      $5
 
 # the index is the important one for sequence testing.  For user 1, we are
 # setting a sequence of: -1, 0, -1, 1, 3, which will return ok, ok, reuse, ok,
 # fail.  The last one fails because the ts_win is only 1, so an index of 3 (+3
 # timesteps ahead of current time) won't be acceptable to 'totp -c'.
 
-t/try-val 1 3 sha1 8 -1 1
+t/try-val 1 3 sha1 -1 1
     ok
     /validated 'sita1' from '1.2.1.1'/
 
-t/try-val 2 5 sha256 8 5 1
+t/try-val 2 5 sha256 5 1
     /LOG not ok # sita2 \d+ failed at 1\d{9}/
     /totp not ok/
 
@@ -114,11 +114,11 @@ cat ~/.ssh/authorized_keys
 
 sleep 1
 
-t/try-val 1 3 sha1 8 0 2
+t/try-val 1 3 sha1 0 2
     ok
     /validated 'sita1' from '1.2.1.2'/
 
-t/try-val 2 5 sha256 8 -2 2
+t/try-val 2 5 sha256 -2 2
     /validated 'sita2' from '1.2.2.2'/
 
 cat ~/.ssh/authorized_keys
@@ -127,12 +127,12 @@ cat ~/.ssh/authorized_keys
 
 sleep 1
 
-t/try-val 1 3 sha1 8 -1 3
+t/try-val 1 3 sha1 -1 3
     !ok
     /LOG not ok # totp reused or older totp used/
     /totp not ok/
 
-t/try-val 2 5 sha256 8 0 3
+t/try-val 2 5 sha256 0 3
     /validated 'sita2' from '1.2.2.3'/
 
 cat ~/.ssh/authorized_keys
@@ -141,11 +141,11 @@ cat ~/.ssh/authorized_keys
 
 sleep 1
 
-t/try-val 1 3 sha1 8 1 4
+t/try-val 1 3 sha1 1 4
     ok
     /validated 'sita1' from '1.2.1.4'/
 
-t/try-val 2 5 sha256 8 -1 4
+t/try-val 2 5 sha256 -1 4
     /LOG not ok # totp reused or older totp used/
     /totp not ok/
 
@@ -155,12 +155,12 @@ cat ~/.ssh/authorized_keys
 
 sleep 1
 
-t/try-val 1 3 sha1 8 3 5
+t/try-val 1 3 sha1 3 5
     !ok
     /LOG not ok # sita1 \d+ failed at \d+/
     /totp not ok/
 
-t/try-val 2 5 sha256 8 1 5
+t/try-val 2 5 sha256 1 5
     /validated 'sita2' from '1.2.2.5'/
 
 cat ~/.ssh/authorized_keys
@@ -169,12 +169,12 @@ cat ~/.ssh/authorized_keys
 
 sleep 1
 
-t/try-val 5 5 sha512 8 1 1
+t/try-val 5 5 sha512 1 1
     /validated 'sita5' from '1.2.5.1'/
 
 sleep 1
 
-t/try-val 5 5 sha512 8 0 2
+t/try-val 5 5 sha512 0 2
     /LOG not ok # totp reused or older totp used/
     /totp not ok/
 

@@ -68,7 +68,7 @@ sub usage {
 
     say '
     totp -c username TOTP       # check totp for user
-    totp -s secret [...]        # show totp for secret [seconds] [window] [alg] [digits]
+    totp -s secret [...]        # show totp for secret [seconds] [window] [alg]
 
     totp -a username            # add user, generates and prints secret
     totp --del username         # delete user
@@ -158,11 +158,10 @@ delete arbitrary keys added by "-u", and so on.
         my $secret = tu_get( $user, 'secret' );
         my $tsw    = tu_get( $user, 'ts_win' );
         my $alg    = tu_get( $user, 'alg' ) || 'sha1';
-        my $digits = tu_get( $user, 'digits' ) || 8;
 
         # find, within the window, which timestep produced the totp
         for my $ts ( -$tsw .. $tsw ) {
-            if ( $totp == totp( $secret, $CT + $ts * 30, $alg, $digits ) ) {
+            if ( totp_match( $totp, totp( $secret, $CT + $ts * 30, $alg ) ) ) {
 
                 # the timestep should be strictly greater than the last
                 # timestep this user used
@@ -183,22 +182,30 @@ delete arbitrary keys added by "-u", and so on.
         exit 1;
     }
 
+    # if a user has a 6-digit-only TOTP software (as opposed to 8-digits) we
+    # should still be able to handle it transparently.
+    sub totp_match {
+        my ($in, $computed) = @_;
+        return 1 if $in == $computed;
+        return 1 if $in == ( $computed % 10**6 );
+        return 0;
+    }
+
     sub show_totp {
-        my $s = shift or _die "need secret [seconds] [window] [alg] [digits]";
+        my $s = shift or _die "need secret [seconds] [window] [alg]";
         my $t = shift || time();
         my $w = shift || 0;        # window in timesteps
         my $a = shift || 'sha1';
-        my $d = shift || 8;
 
         # if he wants just one
         if ( $w == 0 ) {
-            say totp( $s, $t, $a, $d );
+            say totp( $s, $t, $a );
             return;
         }
 
         # he wants a range of them
         for my $x ( -$w .. $w ) {
-            say "$x\t", totp( $s, $t + $x * 30, $a, $d );
+            say "$x\t", totp( $s, $t + $x * 30, $a );
         }
 
         exit 0;
@@ -209,7 +216,6 @@ delete arbitrary keys added by "-u", and so on.
         my $secret = shift;
         my $epoch_seconds  = shift || 0;
         my $alg    = shift || 'sha1';
-        my $digits = shift || 8;
 
         $secret = MIME::Base32::decode($secret);
 
@@ -229,7 +235,7 @@ delete arbitrary keys added by "-u", and so on.
         my $dt = unpack "N" => substr $hash, $offset, 4;
         $dt &= 0x7fffffff;
 
-        return $dt % 10**$digits;
+        return $dt % 10**8;
     }
 }
 
