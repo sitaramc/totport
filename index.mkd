@@ -18,19 +18,22 @@ Sadly, most services are not TOTP enabled, or it requires a fair bit of effort
 to put a TOTP gate in front of them.  (Think various imap servers, database
 servers, even web servers).
 
-But if all your services are behind a firewall, and you're mainly interested
-in protecting remote access (i.e., access from *outside* your network), then
-**totport** is a very simple way to put a TOTP gate in front of those
-services.  (Please see one of the appendices for how to use this even if all
-servers are visible, like perhaps on an internal network).
+But if you can force all your services to go through one "gatekeeper" server,
+(for example by telling the applications to accept connections *only* from the
+gatekeeper) then that server can use **totport** and authenticate users with
+TOTP, and then use ssh port forwarding to enable selective access.  @@gray(One
+downside is that all the traffic goes through this server, so if huge chunks
+of data need to be moved, this may not be a good idea, but for most normal
+apps this is fine.)@@
 
 `totport` works by creating an additional authorized keys line with
 appropriate "from" and "permitopen" options, when it receives a valid TOTP
-passcode.  Subsequent connections will permit forwarding to those hosts and
-ports.  The basic idea (of having a validate step making some kind of a
-backend change to enable the next action) is inspired by Konstantin's recent
-addition of [2-factor authentication][gl2fa] to [gitolite][gl].  Thanks
-Konstantin!
+passcode.  Subsequent connections from that validated IP address will permit
+forwarding to those hosts and ports.
+
+The basic idea (of having a validate step making some kind of a backend change
+to enable the next action) is inspired by Konstantin's recent addition of
+[2-factor authentication][gl2fa] to [gitolite][gl].  Thanks Konstantin!
 
 [gl]: http://gitolite.com
 [gl2fa]: https://github.com/mricon/totp-cgi/tree/master/contrib/gitolite
@@ -86,7 +89,7 @@ paintings either, so you may want to look into some art appreciation courses
 somewhere.)@@
 
 1.  Alice sends you her ssh public key, plus a list of hosts (and
-    corresponding ports) behind the firewall that she wants access to.
+    corresponding ports) behind the TOTP gatekeeper that she wants access to.
 
 2.  You'll do some stuff on the server then tell her to "enroll".
 
@@ -116,12 +119,12 @@ Next, the actual usage:
 
 ![](s1-2.png)
 
-1.  When Alice wants to access any of the hosts behind the firewall, she first
-    sends a valid TOTP value, something like this:
+1.  When Alice wants to access any of the hosts behind the TOTP gatekeeper,
+    she first sends a valid TOTP value, something like this:
 
         ssh totport@host val <TOTP>
 
-    where the "TOTP" is of course whatever 6- or 8-digit number her TOTP
+    where the "\<TOTP\>" is of course whatever 6- or 8-digit number her TOTP
     software is currently displaying.
 
     A message like `validated 'alice' from '1.2.3.4'` indicates success.
@@ -203,8 +206,8 @@ Next, the actual usage:
 
 1.  Obtain public keys from your users and put them in `~/keydir`.  The public
     key file for a user "alice" will be copied to `~/keydir/alice.pub`.
-    Subdirectories are not allowed, and more than one key per user is also not
-    allowed.
+    Subdirectories are not allowed.  If a user has more than one key they want
+    to send you, please look in the appendices for how to deal with it.
 
 2.  Decide what ports the user should have access to (look in `~/totport.rc`
     for the short names).  Using the examples in the sample rc file in the
@@ -235,6 +238,12 @@ Once a valid passcode has been submitted, the next connection to the same
 user/server (`totport@host`), with the port forward options specified, should
 be sent within 20 minutes.  After 20 minutes, the entry could be purged and
 the auth keys file rebuilt at any time.
+
+You can change this on a per-user basis.  For example, Bob always comes in
+from the same IP so we want to make things easier for him.  This command will
+keep the IP valid for 10 hours:
+
+    totp -u <username> valid_for = 600
 
 Although there's no daemon hanging around waiting for entries to expire and
 rebuild the authkeys file, a rebuild can be triggered in the following ways:
@@ -318,7 +327,15 @@ that happens, disable all access to that user for some time.
 
 # Appendices
 
-## securely downloading the TOTP "secret"
+## (user) ssh keys
+
+Generating ssh keys and sending your admin the public key is fairly
+straightforward.  Steps 1, 2, and parts of step 4 in [Github's help
+pages][ghssh1] are useful here.
+
+[ghssh1]: https://help.github.com/articles/generating-ssh-keys
+
+## (user) securely downloading the TOTP "secret"
 
 First, let's remind ourselves that the TOTP passcode must come from a
 **different device** than the PC which contains your ssh keypair.  Although it
@@ -334,7 +351,8 @@ see output like this:
     you can run this or similar commands to get a QR code on screen:
         qrencode -s16 -m1 -o alice.png otpauth://totp/alice@sita-lt?secret=ZQJHY5JMJRCLSIT5PYX4S7C7POVNZN2W
 
-Here are the ways to get that onto your device:
+Please do *not* use google.com, or indeed *any* external server, to produce
+the QR code.  Here are my recommended ways to get that onto your device:
 
 1.  On Linux
 
@@ -361,9 +379,14 @@ Here are the ways to get that onto your device:
     My suggestion is to bite the bullet and carefully type in the code
     manually.  Better safe than sorry.
 
-[vlc:] http://www.osnews.com/story/24934/VLC_Suffers_from_Companies_Spreading_Malware_Bundled_with_VLC
+3.  (TODO) It should be easy to setup a very simple web server on 127.0.0.1:80
+    that takes in a secret, and spits out a PNG that a web browser can
+    display.  This web server can be added to the list of ports that are
+    allowed to users so it's not accessible from outside.
 
-## setting up ssh config
+[vlc]: http://www.osnews.com/story/24934/VLC_Suffers_from_Companies_Spreading_Malware_Bundled_with_VLC
+
+## (user) setting up ssh config
 
 Let's say you need the following port forwards: port 22 of host 1.2.3.4, port
 443 of host 1.2.3.5, and port 5432 (postgres) on host 1.2.3.6.
@@ -371,9 +394,9 @@ Let's say you need the following port forwards: port 22 of host 1.2.3.4, port
 Once the enrollment is done, here's what you will be doing whenever you wish
 to connect with any of these services:
 
-    ssh totport@totp-gateway.example.com val <TOTP code>
+    ssh totport@totp-gatekeeper.example.com val <TOTP code>
     # validate your IP, then:
-    ssh -L 2222:1.2.3.4:22 -L 4433:1.2.3.5:443 -L 5432:1.2.3.6:5432 -N totport@totp-gateway.example.com
+    ssh -L 2222:1.2.3.4:22 -L 4433:1.2.3.5:443 -L 5432:1.2.3.6:5432 -N totport@totp-gatekeeper.example.com
 
 That's a terrible thing to have to type every time!  After a few days you'd
 feel like you'd get CTS or something!
@@ -383,12 +406,12 @@ and put these lines in it:
 
     host tp
         user totport
-        hostname totp-gateway.example.com
+        hostname totp-gatekeeper.example.com
         # ssh to 1.2.3.4
         localforward    localhost:2222          1.2.3.4:22
         # https to 1.2.3.5
         localforward    localhost:4433          1.2.3.5:443
-        # postgres to 1.2.3.6
+        # postgres server on 1.2.3.6
         localforward    localhost:5432          1.2.3.6:5432
 
 And that's it.  Now you can simply type:
@@ -397,7 +420,11 @@ And that's it.  Now you can simply type:
     # and then...
     ssh -N tp
 
-## putty
+and once you type the second command, your local ports are ready to use.  In
+order to "ssh 1.2.3.4", you'd say "ssh -p 2222 127.0.0.1" instead.  Similarly,
+instead of "https://1.2.3.5", you'd say "https://127.0.0.1:4433", and so on.
+
+## (user) putty
 
 I've been told that all this can be done in putty also, but it's cumbersome.
 The preferences dialog is a steaming pile of canine excrement, but with great
@@ -405,15 +432,20 @@ care, patience, experience, (and large amounts of alcohol, in the worst case),
 it is possible to set it up in a way similar to openssh's ssh config file.
 
 Patches to this section of the documentation are NOT welcome.  However, if you
-put up instructions somewhere, I'd be happy to post a link.
+put up instructions somewhere or find a good place that describes how to do
+the equivalent of the previous section, email me and I'd be happy to add a
+link to it.
 
-## TOTP gateway on an internal network
+## (admin) users with more than one ssh key
 
-Sometimes, it so happens that users already have connectivity to the target
-servers, and you can't really change that.  If you still need to gate some of
-those services using TOTP, you will have to setup the *applications* on the
-server so that they don't accept connections from anywhere except the TOTP
-gateway.
+Unlike gitolite, totport has no simple way to let a single user use multiple
+keys.  Just treat them as different users "alice-1", "alice-2", etc., or
+perhaps "alice-home", "alice-work", "alice-laptop", and so on.  An added
+advantage of this is that you can choose different port permissions for the
+different personas, if needed.
+
+There are probably ways to deal with this better, but until it becomes a
+serious issue this workaround will do fine.
 
 ----
 
