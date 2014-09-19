@@ -61,8 +61,8 @@ ls ~/totp.log ~/totp.sqlite3
     ok
 
 ./totp -u sita3 alg = sha512
-    !ok
-    /user 'sita3' does not exist/
+    ok
+    /user 'sita3' does not exist, creating.../
 
 ./totp -u sita5 alg = sha512
     ok
@@ -84,7 +84,7 @@ ls ~/totp.log ~/totp.sqlite3
 
 ./totp -d | wc -l
     ok
-    /20/
+    /25/
 
 ## sha1 STARTS HERE
 

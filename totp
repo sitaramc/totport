@@ -103,7 +103,7 @@ delete arbitrary keys added by "-u", and so on.
     sub add_user {
         my $user = shift or _die "need username";
 
-        _die "user '$user' already exists" if tu_exists($user);
+        _die "user '$user' already enrolled" if tu_get( $user, 'secret' );
 
         # generate random secret
         my $secret = MIME::Base32::encode(`openssl rand 20`);
@@ -136,7 +136,7 @@ delete arbitrary keys added by "-u", and so on.
         usage() unless $val eq '=';
         $val = shift;
 
-        _die "user '$user' does not exist" unless tu_exists($user);
+        _warn "user '$user' does not exist, creating..." unless tu_exists($user);
 
         # don't let him delete the keys that totp cares about
         _die "sorry Dave, I can't let you do that" if not $val and ( $key eq 'secret' or $key eq 'ts_win' );

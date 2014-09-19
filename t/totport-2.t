@@ -60,7 +60,7 @@ t/try-val 1 2 sha1 -1
 
 ./totp -d | wc -l
     ok
-    /23/
+    /28/
 
 cp ~/totp.sqlite3 ~/totp.sql3bkp
     ok
