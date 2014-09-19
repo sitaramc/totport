@@ -1,0 +1,292 @@
+<!-- options: toc -->
+
+% totport -- TOTP anywhere, any service
+
+@@box-r(Download: <http://github.com/sitaramc/totport>)@@
+
+TOTP ("Time-based One Time Password") is the simplest way of adding "2 factor
+authentication" to a service.  Many online services now offer TOTP as an
+additional security measure against stolen passwords.  @@gray(Reference links:
+[OTPs][wpotp] are a type of [two factor authentication][wp2fa], and
+[TOTPs][wptotp] are a very specific type of OTP.)@@
+
+[wpotp]: https://en.wikipedia.org/wiki/One-time_password
+[wptotp]: https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm
+[wp2fa]: https://en.wikipedia.org/wiki/Two_factor_authentication
+
+Sadly, most services are not TOTP enabled, or it requires a fair bit of effort
+to put a TOTP gate in front of them.  (Think various imap servers, database
+servers, even web servers).
+
+@@box-r(Documentation TODO items: expiry of validated IPs, various appendices
+mentioned in the text -- especially "how to securely download the secret to
+your device".  Maybe more stuff I didn't think of.)@@
+
+But if all your services are behind a firewall, and you're mainly interested
+in protecting remote access (i.e., access from *outside* your network), then
+**totport** is a very simple way to put a TOTP gate in front of those
+services.  `totport` works by creating an additional authorized keys line with
+appropriate "from" and "permitopen" options, when it receives a valid TOTP
+passcode.  Subsequent connections will permit forwarding to those hosts and
+ports.  (The basic idea is inspired by Konstantin's recent addition of
+[2-factor authentication][gl2fa] to [gitolite][gl].  Thanks Konstantin!)
+
+[gl]: http://gitolite.com
+[gl2fa]: https://github.com/mricon/totp-cgi/tree/master/contrib/gitolite
+
+@@red(Of course, one downside of TOTP is that the user needs to have an
+Android phone or tab handy.  While it is possible to compute the TOTP
+passcodes on the same laptop or desktop that the user is using to log on, this
+totally defeats the purpose of two factor authentication, so don't do that!)@@
+
+# teaser -- what do users see?
+
+Here's what the process of joining and using this system looks like to one of
+your users.  We'll pretend your user is ["alice"][wpab].
+
+[wpab]: https://en.wikipedia.org/wiki/Alice_and_Bob
+
+First, the one-time enrollment:
+
+.aa s1-1.png
+
+        +--------+     (1)       +----------+
+        |        | ssh pub key   |          |
+        | Alice  +-------------->| (admin)  |
+        |        |               |          |
+        |        +--+            |          |
+        ---------|  |            |cPNK      |
+       /- - - - /   |            +----+-----+
+      /- - - - /    |                 |
+     ---------/     |                 |
+                    |  (3)            |
+                    |(enroll)         |    (2)
+                    |                 |(alice.pub)
+                    |                 |
+                    |                 |
+                    |                 v
+                    |             +---------+
+                    |             |         |
+                    |             | server  |
+                    |             |         |
+                    +------------>|         |
+                                  |         |
+                                  |cGRE     |
+                                  +---------+
+
+.end
+
+![](s1-1.png)
+
+@@gray(For the artistically challenged among you, the thing on the left is a
+laptop.  If you don't get that, you'll never be able to appreciate Picasso's
+paintings either, so you may want to look into some art appreciation courses
+somewhere.)@@
+
+1.  Alice sends you her ssh public key, plus a list of hosts (and
+    corresponding ports) behind the firewall that she wants access to.
+
+2.  You'll do some stuff on the server then tell her to "enroll".
+
+3.  Alice runs "ssh totport@host enroll", which enrolls her into the TOTP
+    system.  This means the server generates and prints out a secret that
+    Alice must feed into the TOTP app ("FreeOTP" preferred, otherwise "Google
+    Authenticator") on her Android mobile or tab.  More on this in one of the
+    appendices.
+
+Next, the actual usage:
+
+.aa s1-2.png
+
+                                 +----------+     +---------------+
+        +--------+  1. validate  |          |     |               |
+        |        +-------------->| TOTP     |     | application   |
+        | Alice  |  2. enable    | server   |     | servers...    |
+        |        +-------------->|          |     |               |
+        ---------|               |          |     | (all behind   |
+       /- - - - /   3. use       |cGRE      |     | the TOTP box) |
+      /- - - - +-----------------+----------+---->|               |
+     ---------/   (goes through  |cGRE      |     |               |
+                  the TOTP box!) +----------+     |cGRE           |
+                                                  +---------------+
+
+.end
+
+![](s1-2.png)
+
+1.  When Alice wants to access any of the hosts behind the firewall, she first
+    sends a valid TOTP value, something like this:
+
+        ssh totport@host val <TOTP>
+
+    where the "TOTP" is of course whatever 6- or 8-digit number her TOTP
+    software is currently displaying.
+
+    A message like `validated 'alice' from '1.2.3.4'` indicates success.
+
+2.  Once that is done, she enables the port forwards.  This is done by
+    connecting to the TOTP server again, but this time without any command.
+    She runs the following in a spare terminal window and leaves it running:
+
+        ssh -L 2222:1.2.3.4:22 -L 4433:2.3.4.5:443 -N totport@host
+
+    (Later, she will probably set up her `~/.ssh/config` file to avoid typing
+    so much!  Details are in one of the appendices.)
+
+3.  At this point the local ports are ready.  She uses the local port numbers
+    she chose (2222, 4433, in the example above) with an IP of 127.0.0.1, and
+    starts her clients, whatever they may be.
+
+# quickstart
+
+## install and setup
+
+**As root**:
+
+*   Install perl's DBI driver and DBD::SQlite modules.  On Fedora, the RPMs
+    are called perl-DBI and perl-DBD-SQLite.
+
+    Running
+
+        perl -MDBI -MDBD::SQLite -e 0
+
+    should not show any errors.
+
+*   Create a userid exclusively for this tool; in this documentation we will
+    call it `totport`.  Make sure no one has command line access to this
+    userid from ssh.  Instead, they should log on to some other userid on the
+    server and run "su - totport".  If you have a password for this, make sure
+    only the admin knows it and it is really long and complex and all that
+    jazz.
+
+*   Edit `/etc/ssh/sshd_config` and make sure you have the following settings.
+
+    In the main part of the file:
+
+        AllowTCPForwarding no
+
+    At the bottom of the file:
+
+        Match User totport
+            AllowTcpForwarding yes
+
+    I'm not sure what is the minimum ssh version required for this, but most
+    distros after 2012 or so should be fine.
+
+    Don't forget to restart sshd.
+
+**As the `totport` user**:
+
+*   `mkdir bin; cd bin`, then get the following files into this directory:
+
+        # from http://github.com/sitaramc/totport
+        totp
+        totport
+        Utils.pm
+
+        # from http://github.com/sitaramc/hashlite
+        hashlite
+        HashLite.pm
+
+    Don't forget to "chmod +x" the files that don't end in ".pm".
+
+*   Copy the sample rc file `t/totport.rc.sample` from totport (same URL as
+    above) as `$HOME/totport.rc`.
+
+    Make whatever changes you need in this file; it's sufficiently commented.
+
+*   `mkdir ~/keydir` to prepare for receiving user keys.
+
+## add users
+
+*   Obtain public keys from your users and put them in `~/keydir`.  The public
+    key file for a user "alice" will be copied to `~/keydir/alice.pub`.
+    Subdirectories are not allowed, and more than one key per user is also not
+    allowed.
+
+*   Run `totport rebuild` to rebuild `~/.ssh/authorized_keys`.
+
+*   Tell the user she can "enroll".  She has to use a normal ssh client and
+    run `ssh totport@host enroll`.
+
+    This will print a "secret" that she will need to feed to the TOTP app
+    (FreeOTP preferred, else "Google Authenticator") on the user's Android
+    mobile or tab.  See one of the appendices for more on this part of the
+    process.
+
+*   Decide what ports the user should have access to (look in `~/totport.rc`
+    for the short names).  Using the examples in the sample rc file in the
+    totport code's `t/` subdir, you might say:
+
+        totp -u alice ports = GIT1,GIT2,MAIL
+
+    which would allow alice to access those internal host:port combinations.
+
+    NOTE the spaces around the "=" are *required*.  ALSO NOTE there are NO
+    spaces between the various shortnames used, just a comma.
+
+*   Run `totport rebuild` to rebuild the authkeys file.  (NOTE that this will
+    NOT result in a line that contains port forwards for GIT1, GIT2, and MAIL.
+    That will only happen after the user sends a valid TOTP!)
+
+# background
+
+There are several background bits you might need, in order to understand how
+this works.
+
+1.  How does ssh force something specific to run, is best explained
+    [here](http://gitolite.com/gitolite/glssh.html).  Some parts of that page
+    may be specific to gitolite, but by and large it's a fairly general
+    explanation of ssh's "force command" feature.
+
+    That page also coveres how ssh distinguishes one user from another, if you
+    noticed that *every user* must ssh to the same ssh user (`totport` in our
+    examples) and were wondering how that happens.
+
+2.  Ssh's authorized\_keys file has more tricks than described in the link
+    given in the previous para.  Read up on the "from" and "permitopen"
+    options.
+
+3.  Ssh port forwarding is important to understand.  Briefly, what happens
+    when you say
+
+        ssh -L 2222:1.2.3.4:22 user@host
+
+    is that a local listening port (2222) is created on your workstation.  Any
+    connections to this will be transparently forwarded *over the secure
+    channel* to the server, and a connection is opened to the remote host and
+    port specified (in this example, IP 1.2.3.4, port 22).
+
+    One advantage of this is that the IP used is **as seen by the TOTP
+    server**, which means you can reach internal servers.
+
+4.  TOTP is also useful to know.  For example, you (and your users, even more
+    so!) need to understand that the secret that was generated by the TOTP
+    system must **NOT** be stored permanently on the same computer that
+    contains the ssh private key!  Then it would not really be "2 factor", in
+    a sense.
+
+    Several websites, starting with google itself, then github, and many more,
+    use TOTP based 2-factor auth.  Many of those services have explanations,
+    pictures, etc., of TOTP.  Search around...
+
+# SECURITY NOTES
+
+Mainly, if your users don't protect the "secret" well enough, this won't work
+so well.  Luckily, both FreeOTP and "google authenticator" don't allow you to
+view the secret once it has been entered, so it's safe from casual attempts at
+getting the secret, but I have no idea what the internal storage is and if
+some fancy tool/hardware/memory extractor can lift that information out.
+
+If your private key is only used for this site, this kinda sorta makes it less
+risky to not have a passphrase on it, but for really important sites I still
+would do that.
+
+## TODO
+
+**Brute force/DOS protection**
+
+Since the attack model is of someone having successfully compromised one of
+your users' ssh private key, you can't implicitly trust them.  It should be
+easy enough to add code that detects more than N logins in M seconds, and if
+that happens, disable all access to that user for some time.

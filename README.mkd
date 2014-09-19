@@ -1,0 +1,31 @@
+% totport -- TOTP anywhere, any service
+
+TOTP ("Time-based One Time Password") is the simplest way of adding "2 factor
+authentication" to a service.  Many online services now offer TOTP as an
+additional security measure against stolen passwords.  Reference links:
+[OTPs][wpotp] are a type of [two factor authentication][wp2fa], and
+[TOTPs][wptotp] are a very specific type of OTP.
+
+[wpotp]: https://en.wikipedia.org/wiki/One-time_password
+[wptotp]: https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm
+[wp2fa]: https://en.wikipedia.org/wiki/Two_factor_authentication
+
+Sadly, most services are not TOTP enabled, or it requires a fair bit of effort
+to put a TOTP gate in front of them.  (Think various imap servers, database
+servers, even web servers).
+
+But if all your services are behind a firewall, and you're mainly interested
+in protecting remote access (i.e., access from *outside* your network), then
+**totport** is a very simple way to put a TOTP gate in front of those
+services.  `totport` works by creating an additional authorized keys line with
+appropriate "from" and "permitopen" options, when it receives a valid TOTP
+passcode.  Subsequent connections will permit forwarding to those hosts and
+ports.  (The basic idea is inspired by Konstantin's recent addition of
+[2-factor authentication][gl2fa] to [gitolite][gl].  Thanks Konstantin!)
+
+[gl]: http://gitolite.com
+[gl2fa]: https://github.com/mricon/totp-cgi/tree/master/contrib/gitolite
+
+----
+
+The rest of the documentation is at <http://gitolite.com/totport>.
