@@ -18,14 +18,13 @@ Sadly, most services are not TOTP enabled, or it requires a fair bit of effort
 to put a TOTP gate in front of them.  (Think various imap servers, database
 servers, even web servers).
 
-@@box-r(Documentation TODO items: expiry of validated IPs, various appendices
-mentioned in the text -- especially "how to securely download the secret to
-your device".  Maybe more stuff I didn't think of.)@@
-
 But if all your services are behind a firewall, and you're mainly interested
 in protecting remote access (i.e., access from *outside* your network), then
 **totport** is a very simple way to put a TOTP gate in front of those
-services.  `totport` works by creating an additional authorized keys line with
+services.  (Please see one of the appendices for how to use this even if all
+servers are visible, like perhaps on an internal network).
+
+`totport` works by creating an additional authorized keys line with
 appropriate "from" and "permitopen" options, when it receives a valid TOTP
 passcode.  Subsequent connections will permit forwarding to those hosts and
 ports.  The basic idea (of having a validate step making some kind of a
@@ -202,22 +201,12 @@ Next, the actual usage:
 
 ## add users
 
-*   Obtain public keys from your users and put them in `~/keydir`.  The public
+1.  Obtain public keys from your users and put them in `~/keydir`.  The public
     key file for a user "alice" will be copied to `~/keydir/alice.pub`.
     Subdirectories are not allowed, and more than one key per user is also not
     allowed.
 
-*   Run `totport rebuild` to rebuild `~/.ssh/authorized_keys`.
-
-*   Tell the user she can "enroll".  She has to use a normal ssh client and
-    run `ssh totport@host enroll`.
-
-    This will print a "secret" that she will need to feed to the TOTP app
-    (FreeOTP preferred, else "Google Authenticator") on the user's Android
-    mobile or tab.  See one of the appendices for more on this part of the
-    process.
-
-*   Decide what ports the user should have access to (look in `~/totport.rc`
+2.  Decide what ports the user should have access to (look in `~/totport.rc`
     for the short names).  Using the examples in the sample rc file in the
     totport code's `t/` subdir, you might say:
 
@@ -228,9 +217,42 @@ Next, the actual usage:
     NOTE the spaces around the "=" are *required*.  ALSO NOTE there are NO
     spaces between the various shortnames used, just a comma.
 
-*   Run `totport rebuild` to rebuild the authkeys file.  (NOTE that this will
-    NOT result in a line that contains port forwards for GIT1, GIT2, and MAIL.
-    That will only happen after the user sends a valid TOTP!)
+3.  Run `totport rebuild` to rebuild `~/.ssh/authorized_keys`.
+
+4.  Tell the user she can "enroll".  She has to use a normal ssh client and
+    run `ssh totport@host enroll`.
+
+    This will print a "secret" that she will need to feed to the TOTP app
+    (FreeOTP preferred, else "Google Authenticator") on the user's Android
+    mobile or tab.  See one of the appendices for more on this part of the
+    process.
+
+# details
+
+## token validity and expiry
+
+Once a valid passcode has been submitted, the next connection to the same
+user/server (`totport@host`), with the port forward options specified, should
+be sent within 20 minutes.  After 20 minutes, the entry could be purged and
+the auth keys file rebuilt at any time.
+
+Although there's no daemon hanging around waiting for entries to expire and
+rebuild the authkeys file, a rebuild can be triggered in the following ways:
+
+*   Manually running `totport rebuild`.  You could also put it in cron.  I
+    suggest using an interval between 10 minutes and 1 hour.
+
+*   Any time anyone tries to validate themselves.  This is kind of a hack, in
+    that if you forget to set up a cron job, there's still *some* way in which
+    expired entries get purged!
+
+    On the other hand, it causes interesting behaviour in some vague "game
+    theory" sense -- the busier the system, the more actively things get
+    cleaned up and people have to revalidate themselves!
+
+If the "people have to revalidate themselves" bothers you, please remember
+that this is only a port forward, and as long as your network does not die, an
+`ssh -fN ...` should basically just run forever.
 
 # background
 
@@ -294,6 +316,105 @@ your users' ssh private key, you can't implicitly trust them.  It should be
 easy enough to add code that detects more than N logins in M seconds, and if
 that happens, disable all access to that user for some time.
 
+# Appendices
+
+## securely downloading the TOTP "secret"
+
+First, let's remind ourselves that the TOTP passcode must come from a
+**different device** than the PC which contains your ssh keypair.  Although it
+is quite easy to do that also on the same box (running `totp -s <SECRET>` will
+do that, after all!), it is @@red(**most strongly recommended not to do
+so**)@@.  In fact, don't even be tempted to **store** the secret on the same
+computer!
+
+However, the initial enrollment will happen from your computer.  The user will
+see output like this:
+
+    secret = ZQJH Y5JM JRCL SIT5 PYX4 S7C7 POVN ZN2W
+    you can run this or similar commands to get a QR code on screen:
+        qrencode -s16 -m1 -o alice.png otpauth://totp/alice@sita-lt?secret=ZQJHY5JMJRCLSIT5PYX4S7C7POVNZN2W
+
+Here are the ways to get that onto your device:
+
+1.  On Linux
+
+    If you're on Linux, generate a QR code and scan that.
+
+    Install the "qrencode" program and run the command that was suggested by
+    the enroll command's output.  This gets you a PNG file.  Display that on
+    screen and do whatever your Android needs to scan it.
+
+    FreeOTP comes with a built-in scanner, and google authenticator suggests
+    one to install.  @@red((I do not know if the one that google authenticator
+    suggests is open source nor how trustworthy it is; seems to me a QR code
+    scanner that "calls home" could wreak havoc on security!))@@
+
+2.  On Windows
+
+    I don't have any experience on Windows.  As far as I know there's no
+    curated, trusted, repository to get software from, like there is for most
+    Linux distros.  Often it's hard to even know if the software is open
+    source.  Worse, even [well-known, credible, open source software can be
+    riddled with malware][vlc] because of unscrupulous people taking advantage
+    of the lack of a trusted repository.
+
+    My suggestion is to bite the bullet and carefully type in the code
+    manually.  Better safe than sorry.
+
+[vlc:] http://www.osnews.com/story/24934/VLC_Suffers_from_Companies_Spreading_Malware_Bundled_with_VLC
+
+## setting up ssh config
+
+Let's say you need the following port forwards: port 22 of host 1.2.3.4, port
+443 of host 1.2.3.5, and port 5432 (postgres) on host 1.2.3.6.
+
+Once the enrollment is done, here's what you will be doing whenever you wish
+to connect with any of these services:
+
+    ssh totport@totp-gateway.example.com val <TOTP code>
+    # validate your IP, then:
+    ssh -L 2222:1.2.3.4:22 -L 4433:1.2.3.5:443 -L 5432:1.2.3.6:5432 -N totport@totp-gateway.example.com
+
+That's a terrible thing to have to type every time!  After a few days you'd
+feel like you'd get CTS or something!
+
+Luckily, ssh is pretty smart.  Just create a file called "config" in `~/.ssh`,
+and put these lines in it:
+
+    host tp
+        user totport
+        hostname totp-gateway.example.com
+        # ssh to 1.2.3.4
+        localforward    localhost:2222          1.2.3.4:22
+        # https to 1.2.3.5
+        localforward    localhost:4433          1.2.3.5:443
+        # postgres to 1.2.3.6
+        localforward    localhost:5432          1.2.3.6:5432
+
+And that's it.  Now you can simply type:
+
+    ssh tp val <TOTP code>
+    # and then...
+    ssh -N tp
+
+## putty
+
+I've been told that all this can be done in putty also, but it's cumbersome.
+The preferences dialog is a steaming pile of canine excrement, but with great
+care, patience, experience, (and large amounts of alcohol, in the worst case),
+it is possible to set it up in a way similar to openssh's ssh config file.
+
+Patches to this section of the documentation are NOT welcome.  However, if you
+put up instructions somewhere, I'd be happy to post a link.
+
+## TOTP gateway on an internal network
+
+Sometimes, it so happens that users already have connectivity to the target
+servers, and you can't really change that.  If you still need to gate some of
+those services using TOTP, you will have to setup the *applications* on the
+server so that they don't accept connections from anywhere except the TOTP
+gateway.
+
 ----
 
-`totport` is licensed under the GPL v2.
+`totport` is copyright Sitaram Chamarty and is licensed under the GPL v2.

@@ -34,4 +34,4 @@ The rest of the documentation is at <http://gitolite.com/totport>.
 
 ----
 
-`totport` is licensed under the GPL v2.
+`totport` is copyright Sitaram Chamarty and is licensed under the GPL v2.
