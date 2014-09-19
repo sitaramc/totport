@@ -290,3 +290,7 @@ Since the attack model is of someone having successfully compromised one of
 your users' ssh private key, you can't implicitly trust them.  It should be
 easy enough to add code that detects more than N logins in M seconds, and if
 that happens, disable all access to that user for some time.
+
+----
+
+`totport` is licensed under the GPL v2.

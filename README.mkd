@@ -29,3 +29,7 @@ ports.  (The basic idea is inspired by Konstantin's recent addition of
 ----
 
 The rest of the documentation is at <http://gitolite.com/totport>.
+
+----
+
+`totport` is licensed under the GPL v2.
