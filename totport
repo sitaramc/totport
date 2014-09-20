@@ -144,7 +144,7 @@ sub validate {
     }
 
     # "use within 20 minutes" translates to "use by time() + 1200 seconds"
-    my $use_by = time() + ( `$TOTP -d $user use_within` || 20 ) * 60;
+    my $use_by = time() + ( `$TOTP -d $user valid_for` || 20 ) * 60;
 
     # strings like "MAIL", "GIT1", or "MAIL,GIT1" (which contains both), etc...
     my $ports = `$TOTP -d $user ports`;
