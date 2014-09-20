@@ -18,15 +18,15 @@ ls ~/totp.log ~/totp.sqlite3
 ./totp -a sita1
     ok
     /table does not exist\; creating.../
-    /secret = [A-Z2-7]+/
+    /http://127.0.0.1:3536/qr/[A-Z2-7]+/
 
 ./totp -a sita2
     ok
-    /secret = [A-Z2-7]+/
+    /http://127.0.0.1:3536/qr/[A-Z2-7]+/
 
 ./totp -a sita5
     ok
-    /secret = [A-Z2-7]+/
+    /http://127.0.0.1:3536/qr/[A-Z2-7]+/
 
 ./totp -u sita2 ts_win = 2
     ok

@@ -107,7 +107,6 @@ delete arbitrary keys added by "-u", and so on.
 
         # generate random secret
         my $secret = MIME::Base32::encode(`openssl rand 20`);
-        say STDERR "secret = " . breakup($secret);
 
         # add to db.  We just use defaults for the other parameters; the admin
         # should use '-u' later if needed.
@@ -115,8 +114,7 @@ delete arbitrary keys added by "-u", and so on.
         tu_set( $user, 'ts_win', 1 );
 
         # qrcode anyone?
-        my $hn = `hostname -s`; chomp $hn;
-        say STDERR "you can run this or similar commands to get a QR code on screen:\n    qrencode -s16 -m1 -o $user.png otpauth://totp/$user\@$hn?secret=$secret";
+        qrinfo( $user, $secret );
     }
 
     sub del_user {
@@ -185,7 +183,7 @@ delete arbitrary keys added by "-u", and so on.
     # if a user has a 6-digit-only TOTP software (as opposed to 8-digits) we
     # should still be able to handle it transparently.
     sub totp_match {
-        my ($in, $computed) = @_;
+        my ( $in, $computed ) = @_;
         return 1 if $in == $computed;
         return 1 if $in == ( $computed % 10**6 );
         return 0;
@@ -213,9 +211,9 @@ delete arbitrary keys added by "-u", and so on.
 
     sub totp {
         # get the secret into binary form
-        my $secret = shift;
-        my $epoch_seconds  = shift || 0;
-        my $alg    = shift || 'sha1';
+        my $secret        = shift;
+        my $epoch_seconds = shift || 0;
+        my $alg           = shift || 'sha1';
 
         $secret = MIME::Base32::decode($secret);
 
@@ -287,7 +285,7 @@ delete arbitrary keys added by "-u", and so on.
     }
 
     sub _dump {
-        my $user = shift || '';
+        my $user  = shift || '';
         my $field = shift || '';
 
         if ($user) {
@@ -311,8 +309,36 @@ delete arbitrary keys added by "-u", and so on.
 }
 
 {
-    sub breakup {
-        return join " ", (+shift =~ /.{1,4}/g);
+
+    sub readable {
+        return join " ", ( +shift =~ /.{1,4}/g );
+    }
+
+    sub qrinfo {
+        my $user     = shift;
+        my $secret   = shift;
+        my $readable = readable($secret);
+        my $hn       = `hostname -s`; chomp $hn;
+
+        say STDERR "
+A new secret has been generated for user '$user'.
+
+There are 3 ways in which you can get this into your Android mobile or tab,
+summarised below.  You may need to read the \"securely downloading the TOTP
+secret\" section in http://gitolite.com/totport for more details.  Also, your
+admin may have given you actual IP addresses or port numbers.
+
+Option 1: run the ssh command and then browse to the URL:
+    ssh -L 3536:127.0.0.1:3536 totport\@host qrcode
+    http://127.0.0.1:3536/qr/$secret
+
+Option 2: run:
+    qrencode -tANSI -m1 -o- otpauth://totp/$user\@$hn?secret=$secret
+
+Option 3: type in:
+    $readable
+
+";
     }
 }
 

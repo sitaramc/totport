@@ -35,8 +35,8 @@ tail -2 ~/totp.log
 
 ./totp -a sita1
     ok
-    /secret = [A-Z2-7]+/
-    /qrencode -s16 -m1 -o sita1.png otpauth...totp.*secret=[A-Z2-7]+/
+    /http://127.0.0.1:3536/qr/[A-Z2-7]+/
+    /qrencode -tANSI -m1 -o- otpauth...totp.*secret=[A-Z2-7]+/
 
 hashlite -d ~/totp.sqlite3 dump
     ok
@@ -112,8 +112,8 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 ./totp -a sita2
     ok
-    /secret = [A-Z2-7]+/
-    /qrencode -s16 -m1 -o sita2.png otpauth...totp.*secret=[A-Z2-7]+/
+    /http://127.0.0.1:3536/qr/[A-Z2-7]+/
+    /qrencode -tANSI -m1 -o- otpauth...totp.*secret=[A-Z2-7]+/
 
 hashlite -d ~/totp.sqlite3 dump | wc -l
     ok

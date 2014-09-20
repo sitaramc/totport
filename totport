@@ -59,7 +59,7 @@ _die "rc file missing or doesn't have what I want" unless $port_expander{NONE};
 my $CT = time();
 
 # first, log SSH env stuff
-_log( "SSH_CONNECTION",       $ENV{SSH_CONNECTION}       ) if $ENV{SSH_CONNECTION};
+_log( "SSH_CONNECTION",       $ENV{SSH_CONNECTION} )       if $ENV{SSH_CONNECTION};
 _log( "SSH_ORIGINAL_COMMAND", $ENV{SSH_ORIGINAL_COMMAND} ) if $ENV{SSH_ORIGINAL_COMMAND};
 
 my $conn_ip = conn_ip();
@@ -83,7 +83,7 @@ if ( $cmd eq 'rebuild' ) {
 my $user = $cmd;
 my $ip = shift || 0;
 
-if ($ip and not $ENV{SSH_ORIGINAL_COMMAND}) {
+if ( $ip and not $ENV{SSH_ORIGINAL_COMMAND} ) {
     # this is an IP-validated run.  Port forwards are already in place.
     # We're not expected to do anything, and indeed if the user runs 'ssh
     # -N' we won't even run!
@@ -105,6 +105,13 @@ if ($ip and not $ENV{SSH_ORIGINAL_COMMAND}) {
 # user is enrolling
 if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) eq 'enroll' ) {
     system( $TOTP, "-a", $user ) and exit 1;
+    exit 0;
+}
+
+# user wants to get a qrcode
+if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) eq 'qrcode' ) {
+    say STDERR "ok; you have 20 minutes to generate and scan your QR codes";
+    sleep 1200;    # should be long enough for ANYONE!
     exit 0;
 }
 
@@ -135,7 +142,7 @@ sub validate {
     my $user    = shift;
     my $conn_ip = shift;
 
-    mkdir  $VAL_KEYS;
+    mkdir $VAL_KEYS;
     _chdir $VAL_KEYS;
 
     for my $ev ( glob("*/$user.pub") ) {
@@ -183,7 +190,7 @@ sub rebuild_afk {
         # now rebuild the ak file
         chdir "$VAL_KEYS/$vkd";
 
-        for my $vk (sort glob("*")) {
+        for my $vk ( sort glob("*") ) {
             $akt .= slurp($vk);
         }
     }

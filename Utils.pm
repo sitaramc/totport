@@ -22,7 +22,7 @@ sub _logstart {
 }
 
 sub _warn {
-    _log( 'WARNING', @_ );
+    _log( 'WARNING:', @_ );
     warn @_, "\n";
 }
 

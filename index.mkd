@@ -182,7 +182,7 @@ Next, the actual usage:
 
 **As the `totport` user**:
 
-*   `mkdir bin; cd bin`, then get the following files into this directory:
+*   Run `mkdir bin; cd bin`, then get the following files into this directory:
 
         # from http://github.com/sitaramc/totport
         totp
@@ -200,7 +200,9 @@ Next, the actual usage:
 
     Make whatever changes you need in this file; it's sufficiently commented.
 
-*   `mkdir ~/keydir` to prepare for receiving user keys.
+*   Run `mkdir ~/keydir` to prepare for receiving user keys.
+
+*   Run `qrserve` to start the qrcode display web server on port 3536.
 
 ## add users
 
@@ -339,50 +341,74 @@ pages][ghssh1] are useful here.
 
 First, let's remind ourselves that the TOTP passcode must come from a
 **different device** than the PC which contains your ssh keypair.  Although it
-is quite easy to do that also on the same box (running `totp -s <SECRET>` will
-do that, after all!), it is @@red(**most strongly recommended not to do
-so**)@@.  In fact, don't even be tempted to **store** the secret on the same
-computer!
+is quite easy to do that also on the same box, it is @@red(**most strongly
+recommended not to do so**)@@.  In fact, don't even be tempted to **store**
+the secret on the same computer!
 
-However, the initial enrollment will happen from your computer.  The user will
-see output like this:
+However, the initial enrollment will happen from your computer.  When you type
+in the 'ssh totport@host enroll' command, you will get a summary of the
+different ways to get that code **securely** into your device.
 
-    secret = ZQJH Y5JM JRCL SIT5 PYX4 S7C7 POVN ZN2W
-    you can run this or similar commands to get a QR code on screen:
-        qrencode -s16 -m1 -o alice.png otpauth://totp/alice@sita-lt?secret=ZQJHY5JMJRCLSIT5PYX4S7C7POVNZN2W
+This section gives you more details.  Please use any of those methods, each of
+which has been detailed in the three sub-sections below.  Please do *not* use
+google.com's QR code service, or indeed *any* external server, to produce the
+QR code.
 
-Please do *not* use google.com, or indeed *any* external server, to produce
-the QR code.  Here are my recommended ways to get that onto your device:
+@@gray(I would also avoid Windows programs to generate QR codes.  As far as I
+know there's no curated, trusted, repository to get software from, like there
+is for most Linux distros.  Often it's hard to even know if the software is
+open source.  Worse, even [well-known, credible, open source software can be
+riddled with malware][vlc] because of unscrupulous people taking advantage of
+the lack of a trusted repository.)@@
 
-1.  On Linux
+@@red(**IMPORTANT**)@@: don't do this from a location where your laptop or
+desktop screen is visible to other people, in case someone captures your
+screen with a good camera from a distance!  Not only are cell phone cameras
+getting better and better, qrcode is *designed* to overcome many errors!
 
-    If you're on Linux, generate a QR code and scan that.
+### option 1: qr code server on the TOTP box
 
-    Install the "qrencode" program and run the command that was suggested by
-    the enroll command's output.  This gets you a PNG file.  Display that on
-    screen and do whatever your Android needs to scan it.
+The totp box also runs a qr code web server called `qrserve`.  This server
+already has your "secret", and `qrserve` can only be accessed over the secure
+channel you're already talking on, so this is as safe as it gets.
 
-    FreeOTP comes with a built-in scanner, and google authenticator suggests
-    one to install.  @@red((I do not know if the one that google authenticator
-    suggests is open source nor how trustworthy it is; seems to me a QR code
-    scanner that "calls home" could wreak havoc on security!))@@
+On Linux, run ssh with `-L 3536:127.0.0.1:3536` option, and the command
+`qrcode` to setup the port forward required.  That is:
 
-2.  On Windows
+    ssh -L 3536:127.0.0.1:3536 -p <port> totport@<IP> qrcode
 
-    I don't have any experience on Windows.  As far as I know there's no
-    curated, trusted, repository to get software from, like there is for most
-    Linux distros.  Often it's hard to even know if the software is open
-    source.  Worse, even [well-known, credible, open source software can be
-    riddled with malware][vlc] because of unscrupulous people taking advantage
-    of the lack of a trusted repository.
+where "\<port\>" and "\<IP\>" are whatever your admin gave you.
 
-    My suggestion is to bite the bullet and carefully type in the code
-    manually.  Better safe than sorry.
+On Windows, you'll have to do the equivalent in putty.  I'm not really sure
+how to do this right now, but I'll update this when I find out.  I believe it
+involves a related command called "plink".
 
-3.  (TODO) It should be easy to setup a very simple web server on 127.0.0.1:80
-    that takes in a secret, and spits out a PNG that a web browser can
-    display.  This web server can be added to the list of ports that are
-    allowed to users so it's not accessible from outside.
+After that command starts, point your browser to the url that the enroll
+command printed.  This should be something like:
+
+    http://127.0.0.1:3536/qr/....
+
+A qrcode image should show up. Use your device's QR code scanner to scan it.
+(Please note that the FreeOTP app comes with a builtin scanner).
+
+When done, hit Ctrl-C on the ssh command above or close the putty session.
+
+### option 2: qrencode command
+
+On Linux etc., install 'qrencode' using your package manager and run the
+qrencode command that the enroll output showed.  This command should look
+something like this:
+
+    qrencode -tANSI -m1 -o- otpauth://totp/....?secret=....
+
+A qrcode image should show up. Use your device's QR code scanner to scan it.
+(Please note that the FreeOTP app comes with a builtin scanner).
+
+### option 3: type it in!
+
+If all else fails, just type in the secret.  Spaces and case differences do
+not matter, and the enroll command conveniently prints it in chunks of 4
+letters to make it a little easier on your eyes!
 
 [vlc]: http://www.osnews.com/story/24934/VLC_Suffers_from_Companies_Spreading_Malware_Bundled_with_VLC
 

@@ -74,10 +74,10 @@ wc ~/.ssh/authorized_keys
 
 cut -c1-120 ~/.ssh/authorized_keys
     ok
-    /command="/home/\w+/bin/totport u1",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:22" ssh-rsa /
-    /command="/home/\w+/bin/totport u2",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:22" ssh-rsa /
-    /command="/home/\w+/bin/totport u3",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:22" ssh-rsa /
-    /command="/home/\w+/bin/totport u4",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:22" ssh-rsa /
+    /command="/home/\w+/bin/totport u1",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:3536" ssh-rsa /
+    /command="/home/\w+/bin/totport u2",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:3536" ssh-rsa /
+    /command="/home/\w+/bin/totport u3",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:3536" ssh-rsa /
+    /command="/home/\w+/bin/totport u4",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:3536" ssh-rsa /
 
 ./totport sita0
     !ok

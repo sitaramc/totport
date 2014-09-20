@@ -8,12 +8,10 @@
 
     %port_expander = (
 
-        # The NONE port is mandatory.  it should describe some  port that the
-        # user already has access to, (the one in this sample file is probably
-        # good enough, unless you're running ssh itself on a non-standard port
-        # and wish to keep 22 hidden).
+        # The NONE port is mandatory.  It should point to 127.0.0.1 and the
+        # port on which the "qrserve" program is listening (default, 3536).
 
-        NONE => 'permitopen="127.0.0.1:22"',
+        NONE => 'permitopen="127.0.0.1:3536"',
 
         # The rest of these are here as examples -- replace them with your
         # own.  The names (MAIL, GIT1, etc) are also upto you, but stick to
