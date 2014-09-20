@@ -133,7 +133,7 @@ Next, the actual usage:
     connecting to the TOTP server again, but this time without any command.
     She runs the following in a spare terminal window and leaves it running:
 
-        ssh -L 2222:1.2.3.4:22 -L 4433:2.3.4.5:443 -N totport@host
+        ssh -L 2222:1.2.3.4:22 -L 4433:2.3.4.5:443 totport@host
 
     (Later, she will probably set up her `~/.ssh/config` file to avoid typing
     so much!  Details are in one of the appendices.)
@@ -427,7 +427,7 @@ to connect with any of these services:
 
     ssh totport@totp-gatekeeper.example.com val <TOTP code>
     # validate your IP, then:
-    ssh -L 2222:1.2.3.4:22 -L 4433:1.2.3.5:443 -L 5432:1.2.3.6:5432 -N totport@totp-gatekeeper.example.com
+    ssh -L 2222:1.2.3.4:22 -L 4433:1.2.3.5:443 -L 5432:1.2.3.6:5432 totport@totp-gatekeeper.example.com
 
 That's a terrible thing to have to type every time!  After a few days you'd
 feel like you'd get CTS or something!
@@ -449,7 +449,7 @@ And that's it.  Now you can simply type:
 
     ssh tp val <TOTP code>
     # and then...
-    ssh -N tp
+    ssh tp
 
 and once you type the second command, your local ports are ready to use.  In
 order to "ssh 1.2.3.4", you'd say "ssh -p 2222 127.0.0.1" instead.  Similarly,
