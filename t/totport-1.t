@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 59
+plan 56
 
 # setup
 
@@ -80,13 +80,12 @@ cut -c1-120 ~/.ssh/authorized_keys
     /command="/home/\w+/bin/totport u4",no-X11-forwarding,no-agent-forwarding,no-pty,permitopen="127.0.0.1:3536" ssh-rsa /
 
 ./totport sita0
-    !ok
-    /huh?/
+    ok
+    /hello sita0,.*IP is not validated/
 
 tail -5 ~/totport.log
     ok
     /20..-..-..\...:..:.. \d+ == ARGV ==: sita0/
-    /20..-..-..\...:..:.. \d+ FATAL: huh?/
 
 ./totport sita0 123
     !ok
@@ -100,13 +99,12 @@ tail -5 ~/totport.log
     /20..-..-..\...:..:.. \d+ FATAL: totp error/
 
 ./totport sita1
-    !ok
-    /huh?/
+    ok
+    /hello sita1,.*IP is not validated/
 
 tail -5 ~/totport.log
     ok
     /20..-..-..\...:..:.. \d+ == ARGV ==: sita1/
-    /20..-..-..\...:..:.. \d+ FATAL: huh?/
 
 ./totport sita1 123
     ok
@@ -115,5 +113,4 @@ tail -5 ~/totport.log
     ok
     /20..-..-..\...:..:.. \d+ == ARGV ==: sita1 123/
     /20..-..-..\...:..:.. \d+ valid access user=sita1 validated-ip=123 from=/
-    /20..-..-..\...:..:.. \d+ ...sleeping 1200/
 

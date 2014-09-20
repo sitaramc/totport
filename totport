@@ -88,17 +88,16 @@ if ( $ip and not $ENV{SSH_ORIGINAL_COMMAND} ) {
     # We're not expected to do anything, and indeed if the user runs 'ssh
     # -N' we won't even run!
 
-    say STDERR "hi $user, you may use your forwarded ports now";
+    say STDERR "hi $user, you may use your forwarded ports now.  Use Ctrl-C when done";
 
     _log "valid access user=$user validated-ip=$ip from=$conn_ip";
 
-    my $use_for = `$TOTP -d $user use_for` || 20;
+    # sanity check to make sure user is present
+    my $ports = `$TOTP -d $user ports`;
     _die 'totp error' if ${^CHILD_ERROR_NATIVE};
-    my $sleep = $use_for * 60;
 
-    _log "...sleeping $sleep";
-    sleep $sleep unless $ENV{TOTPORT_TEST};
-
+    sleep 2;
+    sleep unless $ENV{TOTPORT_TEST};
     exit 0;
 }
 
@@ -134,7 +133,8 @@ if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
 }
 
 rebuild_afk();
-_die "huh? ($user, I don't know what you're saying!)";
+say STDERR "hello $user, you're authenticated but your IP is not validated";
+say STDERR "commands:\n\tenroll\n\tqrcode\n\tval <TOTP>";
 
 # ----------------------------------------------------------------------
 
