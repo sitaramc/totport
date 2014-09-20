@@ -383,8 +383,9 @@ On Windows, you'll have to do the equivalent in putty.  I'm not really sure
 how to do this right now, but I'll update this when I find out.  I believe it
 involves a related command called "plink".
 
-After that command starts, point your browser to the url that the enroll
-command printed.  This should be something like:
+After that command starts, @@red(**open a "private window" in your
+browser**)@@ @@gray((some browsers call it "incognito" mode))@@, then point it
+at the url that the enroll command printed, which is something like:
 
     http://127.0.0.1:3536/qr/....
 
@@ -403,6 +404,10 @@ something like this:
 
 A qrcode image should show up. Use your device's QR code scanner to scan it.
 (Please note that the FreeOTP app comes with a builtin scanner).
+
+@@red(**Please make sure your shell does not retain the command in its command
+history!**)@@  If you don't have a ready-to-hand way of ensuring that, run
+`cat | sh` then paste that line in and hit Ctrl-D!
 
 ### option 3: type it in!
 
