@@ -115,6 +115,8 @@ delete arbitrary keys added by "-u", and so on.
 
         # qrcode anyone?
         qrinfo( $user, $secret );
+
+        _log("user '$user' added");
     }
 
     sub del_user {
@@ -125,6 +127,7 @@ delete arbitrary keys added by "-u", and so on.
         _die "invalid user/secret" unless $secret eq tu_get( $user, 'secret' );
 
         tu_del($user);
+        _log("user '$user' deleted");
     }
 
     sub upd_user {
@@ -140,6 +143,7 @@ delete arbitrary keys added by "-u", and so on.
         _die "sorry Dave, I can't let you do that" if not $val and ( $key eq 'secret' or $key eq 'ts_win' );
 
         tu_set( $user, $key, $val );
+        _log("user '$user' updated");
     }
 }
 
@@ -166,17 +170,20 @@ delete arbitrary keys added by "-u", and so on.
 
                 my $this_ts = ( int( $CT / 30 ) + $ts );
                 unless ( $this_ts > ( tu_get( $user, 'last_ts' ) || 0 ) ) {
-                    say "LOG not ok # totp reused or older totp used";
+                    say "not ok # totp reused or older totp used";
+                    _log("not ok # totp reused or older totp used");
                     exit 1;
                 }
 
                 # all ok; save "last timestep" and return OK
                 tu_set( $user, 'last_ts', $this_ts );
+                _log("ok");
 
                 exit 0;
             }
         }
         say "LOG not ok # $user $totp failed at $CT";
+        _log("LOG not ok # $user $totp failed at $CT");
         exit 1;
     }
 

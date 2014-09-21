@@ -14,11 +14,13 @@ use 5.10.0;
 
 my $LOGF;
 my $logfh;
+my @argv;
 
 sub _logstart {
     $LOGF = shift;
     open( $logfh, ">>", $LOGF ) or die "$! on open '$LOGF'";
-    _log("== ARGV ==:", @ARGV);
+    # save argv; it will only be printed if any other log messages turn up
+    @argv = @ARGV;
 }
 
 sub _warn {
@@ -32,7 +34,12 @@ sub _die {
 }
 
 sub _log {
-    say $logfh gen_ts() . " $$ " . join( " ", @_ );
+    if (@argv) {
+        # print saved argv
+        say $logfh gen_ts() . " $$ " . join( " ", "== ARGV ==:", @argv);
+        @argv = ();
+    }
+    say $logfh gen_ts() . " $$ " . join( " ", @_ ) if @_;
 }
 
 sub _exit {

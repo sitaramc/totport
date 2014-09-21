@@ -116,14 +116,14 @@ t/mock.pl 1111111109  ./totp    -c sita2 67062674
 
 t/mock.pl 1111111111  ./totp    -c sita2 67062674
     !ok
-    /LOG not ok # totp reused or older totp used/
+    /not ok # totp reused or older totp used/
 
 t/mock.pl 1234567890  ./totp    -c sita2 91819424
     ok
 
 t/mock.pl 20000000000 ./totp    -c sita2 90698825
     !ok
-    /LOG not ok # sita2 90698825 failed at 20000000000/
+    /not ok # sita2 90698825 failed at 20000000000/
 
 t/mock.pl 2000000000  ./totp    -c sita2 90698825
     ok
@@ -150,5 +150,5 @@ t/mock.pl 20000000000 ./totp    -c sita5 47863826
 
 t/mock.pl 2000000000  ./totp    -c sita5 38618901
     !ok
-    /LOG not ok # totp reused or older totp used/
+    /not ok # totp reused or older totp used/
 

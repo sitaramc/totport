@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 113
+plan 116
 
 ## user management
 
@@ -21,7 +21,7 @@ ls ~/totp.log ~/totp.sqlite3
 
 tail -1 ~/totp.log
     ok
-    /20..-..-..\...:..:.. \d+ == ARGV ==:/
+    !/./
 
 ./totp -a
     !ok
@@ -98,9 +98,10 @@ tail -2 ~/totp.log
 ./totp --del sita1 `hashlite -d ~/totp.sqlite3 -t totp_users get sita1 secret`
     ok
 
-tail -1 ~/totp.log
+tail -2 ~/totp.log
     ok
     /20..-..-..\...:..:.. \d+ == ARGV ==: --del sita1 [A-Z2-7]+/
+    /20..-..-..\...:..:.. \d+ user 'sita1' deleted/
 
 hashlite -d ~/totp.sqlite3 dump
     ok
@@ -127,17 +128,19 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
     ok
     /user 'sita1' does not exist, creating.../
 
-tail -2 ~/totp.log
+tail -3 ~/totp.log
     ok
     /20..-..-..\...:..:.. \d+ == ARGV ==: -u sita1 foo = bar/
     /20..-..-..\...:..:.. \d+ WARNING: user 'sita1' does not exist, creating.../
+    /20..-..-..\...:..:.. \d+ user 'sita1' updated/
 
 ./totp -u sita2 foo = bar
     ok
 
-tail -1 ~/totp.log
+tail -2 ~/totp.log
     ok
     /20..-..-..\...:..:.. \d+ == ARGV ==: -u sita2 foo = bar/
+    /20..-..-..\...:..:.. \d+ user 'sita2' updated/
 
 hashlite -d ~/totp.sqlite3 dump
     ok

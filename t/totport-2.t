@@ -105,7 +105,7 @@ t/try-val 1 3 sha1 -1 1
     /validated 'sita1' from '1.2.1.1'/
 
 t/try-val 2 5 sha256 5 1
-    /LOG not ok # sita2 \d+ failed at 1\d{9}/
+    /not ok # sita2 \d+ failed at 1\d{9}/
     /totp not ok/
 
 cat ~/.ssh/authorized_keys
@@ -129,7 +129,7 @@ sleep 1
 
 t/try-val 1 3 sha1 -1 3
     !ok
-    /LOG not ok # totp reused or older totp used/
+    /not ok # totp reused or older totp used/
     /totp not ok/
 
 t/try-val 2 5 sha256 0 3
@@ -146,7 +146,7 @@ t/try-val 1 3 sha1 1 4
     /validated 'sita1' from '1.2.1.4'/
 
 t/try-val 2 5 sha256 -1 4
-    /LOG not ok # totp reused or older totp used/
+    /not ok # totp reused or older totp used/
     /totp not ok/
 
 cat ~/.ssh/authorized_keys
@@ -157,7 +157,7 @@ sleep 1
 
 t/try-val 1 3 sha1 3 5
     !ok
-    /LOG not ok # sita1 \d+ failed at \d+/
+    /not ok # sita1 \d+ failed at \d+/
     /totp not ok/
 
 t/try-val 2 5 sha256 1 5
@@ -175,7 +175,7 @@ t/try-val 5 5 sha512 1 1
 sleep 1
 
 t/try-val 5 5 sha512 0 2
-    /LOG not ok # totp reused or older totp used/
+    /not ok # totp reused or older totp used/
     /totp not ok/
 
 cat ~/.ssh/authorized_keys

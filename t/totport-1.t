@@ -27,17 +27,17 @@ cp t/totport.rc.sample ~/totport.rc
     !ok
     /need command or user name/
 
-tail -4 ~/totport.log
+tail -2 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ == ARGV ==:/
+    /20..-..-..\...:..:.. \d+ FATAL: rc file missing or doesn.t have what I want/
+    /20..-..-..\...:..:.. \d+ FATAL: need command or user name/
 
 SSH_CONNECTION="1.2.3.4 4444 2.3.4.5 22" ./totport
     !ok
     /need command or user name/
 
-tail -4 ~/totport.log
+tail -2 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ == ARGV ==:/
     /20..-..-..\...:..:.. \d+ SSH_CONNECTION 1.2.3.4 4444 2.3.4.5 22/
     /20..-..-..\...:..:.. \d+ FATAL: need command or user name/
 
@@ -45,18 +45,20 @@ SSH_ORIGINAL_COMMAND="1.2.3.4 4444 2.3.4.5 22" ./totport
     !ok
     /need command or user name/
 
-tail -4 ~/totport.log
+tail -2 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ == ARGV ==:/
     /20..-..-..\...:..:.. \d+ SSH_ORIGINAL_COMMAND 1.2.3.4 4444 2.3.4.5 22/
     /20..-..-..\...:..:.. \d+ FATAL: need command or user name/
+
+rm ~/totport.log
+    ok
 
 ./totport rebuild
     ok
 
-tail -4 ~/totport.log
+tail -1 ~/totport.log
     ok
-    /20..-..-..\...:..:.. \d+ == ARGV ==: rebuild/
+    !/./
 
 wc -c ~/.ssh/authorized_keys
     ok

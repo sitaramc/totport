@@ -103,12 +103,14 @@ if ( $ip and not $ENV{SSH_ORIGINAL_COMMAND} ) {
 
 # user is enrolling
 if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) eq 'enroll' ) {
+    _log();
     system( $TOTP, "-a", $user ) and exit 1;
     exit 0;
 }
 
 # user wants to get a qrcode
 if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) eq 'qrcode' ) {
+    _log();
     say STDERR "ok; you have 20 minutes to generate and scan your QR codes";
     sleep 1200;    # should be long enough for ANYONE!
     exit 0;
@@ -116,6 +118,7 @@ if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) eq 'qrcode' ) {
 
 # user supplied a otp ("ssh totport@host val 12345678")
 if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
+    _log();
     my $otp = $1;
     if ( system( $TOTP, "-c", $user, $otp ) ) {
         # note that "true" from system() means things *failed*!
@@ -132,6 +135,7 @@ if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
     }
 }
 
+_log();     # triggers logging of argv without logging anything else
 rebuild_afk();
 say STDERR "hello $user, you're authenticated but your IP is not validated";
 say STDERR "commands:\n\tenroll\n\tqrcode\n\tval <TOTP>";
