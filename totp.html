@@ -65,8 +65,7 @@
 </ul>
 <p>Each of these commands return something starting with &quot;ok&quot; or &quot;not ok&quot;, making it easy to parse for top level errors.</p>
 <p>That's basically it.</p>
-<p>In addition, if you need to store small bits of information about users, you can piggy back on totp's sqlite database. For example, let us say you wanted to keep a count of how many times a user sent a valid TOTP code, and how many times they sent in the wrong code.</p>
-<p>The API for this is:</p>
+<p>In addition, if you need to store small bits of information about users, you can piggy back on totp's sqlite database. The API for this is:</p>
 <ul>
 <li>dump one database field of one user: <code>totp -d username fieldname</code></li>
 <li>update one database field of one user: <code>totp -u username fieldname = value</code></li>
