@@ -1,0 +1,85 @@
+% generalised TOTP API from the command line
+
+# The API
+
+The `totp` program, which is part of `totport` can be used as a TOTP backend
+for any application that can make system() calls.
+
+The API is simple:
+
+*   add a user: `totp -a username`
+*   add/update a user's base-32 secret: `totp -u username secret = ABCDEF...`
+*   delete a user: `totp --del username`
+
+*   check a user+totp combo: `totp -c username totp-code`
+
+Each of these commands return something starting with "ok" or "not ok", making
+it easy to parse for top level errors.
+
+That's basically it.
+
+In addition, if you need to store small bits of information about users, you
+can piggy back on totp's sqlite database.  The API for this is:
+
+*   dump one database field of one user: `totp -d username fieldname`
+*   update one database field of one user: `totp -u username fieldname = value`
+
+The "dump" operation prints the value without a newline at the end, which is
+sometimes useful.
+
+Here's a quick example of counting consecutive failed validations from any
+user, and if count crosses 3, raise an alarm of some kind:
+
+    if totp -c $user $totp
+    then
+        # reset failure count
+        totp -u $user failure_count = 0
+    else
+        # failed...
+        f=`totp -d $user failure_count`
+        (( f = f + 1 ))
+        totp -u $user failure_count = $f
+
+        [[ $f -ge 3 ]] && echo >&2 "BY TOUTATIS!  THE SKY IS FALLING ON OUR HEADS!!"
+    fi
+
+Notice how we just arbitrarily declared and used a field called
+"failure\_count" in each user's record in the database that `totp` maintains.
+This is especially useful if you have small amounts of data, and your app
+doesn't already have its own database.
+
+# QUIRKS/TODO
+
+1.  The "add a user" currently shows the totp secret on screen in a message
+    that gives the user 3 options (see Appendix 1 for the message text).  This
+    is so because at present it is designed to be run from `totport`'s
+    'enroll' command.  However, it would be a trivial matter to separate that
+    out.
+
+2.  Deleting a user currently requires also supplying the user's secret, in
+    order to prevent accidental deletes of someone else.  I'm not sure this is
+    really needed, so I might get rid of it, or replace it with code that
+    saves a copy of the dump for the user, or whatever...  That would make the
+    delete easier to do.
+
+# Appendix 1 -- output from adding a user
+
+This is the output when a user is added.
+
+    A new secret has been generated for user 'alice'.
+
+    There are 3 ways in which you can get this into your Android mobile or tab,
+    summarised below.  You may need to read the "securely downloading the TOTP
+    secret" section in http://gitolite.com/totport for more details.  Also, your
+    admin may have given you actual IP addresses or port numbers.
+
+    Option 1: run the ssh command and then browse to the URL:
+        ssh -L 3536:127.0.0.1:3536 totport@host qrcode
+        http://127.0.0.1:3536/qr/ONRR3OR7EACRIJ6LMBO6232ZKSQLH3IP
+
+    Option 2: run:
+        qrencode -tANSI -m1 -o- otpauth://totp/alice@sita-lt?secret=ONRR3OR7EACRIJ6LMBO6232ZKSQLH3IP
+
+    Option 3: type in:
+        ONRR 3OR7 EACR IJ6L MBO6 232Z KSQL H3IP
+

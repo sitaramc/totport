@@ -2,6 +2,8 @@
 
 % totport -- TOTP anywhere, any service
 
+include sidebar-toc
+
 @@box-r(Download: <http://github.com/sitaramc/totport>)@@
 
 TOTP ("Time-based One Time Password") is the simplest way of adding "2 factor
@@ -17,6 +19,10 @@ additional security measure against stolen passwords.  @@gray(Reference links:
 Sadly, most services are not TOTP enabled, or it requires a fair bit of effort
 to put a TOTP gate in front of them.  (Think various imap servers, database
 servers, even web servers).
+
+@@box-r(The `totp` program which is part of `totport` can also be used as a
+TOTP backend for any application that can make system() calls.  It has a very
+[simple but powerful API](totp.html).)@@
 
 But if you can force all your services to go through one "gatekeeper" server,
 (for example by telling the applications to accept connections *only* from the

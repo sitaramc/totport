@@ -1,0 +1,75 @@
+<script type="text/javascript">
+<!--
+    function hide_show(id) {
+        var e = document.getElementById(id);
+        if(e == null)
+            return;
+        if(e.style.display != 'none')
+            e.style.display = 'none';
+        else
+            e.style.display = 'block';
+    }
+
+    window.onload = function() {
+        var t = document.getElementById('TOC');
+        var sbt = document.getElementById('SBTOC');
+        var h = '<div id="PTOC">'
+        var h2 = ''
+        var h3 = '</div>'
+        var h4 = '<div id="GTOC">'
+        var h5 = '</div>'
+        var hst = '<div style="background: white; color: green; border: 2px solid green"><center><font size=-1><strong>Hide/Show Table of Contents</strong><br />'
+        var pd = '<a href="#" onclick="hide_show(\'PTOC\');">Page TOC</a></font></center></div>'
+        var gt = ''
+
+        if(t == null)
+            sbt.innerHTML = hst + gt + h4 + sbt.innerHTML + h5;
+        else {
+            sbt.innerHTML = hst + pd + gt + h + h2 + t.innerHTML + h3 + h4 + sbt.innerHTML + h5;
+            t.style.display = 'none';   // hide the TOC that pandoc placed
+        }
+    }
+-->
+</script>
+
+<style>
+    #PTOC ul {
+        list-style: none;
+        margin-left: 0;
+        padding-left: 2em;
+        text-indent: -2em;
+        padding-bottom: 2em;
+    }
+    #PTOC ul li {
+        padding-bottom: 10px;
+    }
+    #PTOC ul li ul {
+        padding-bottom: 0px;
+    }
+    #PTOC ul li ul li {
+        padding-bottom: 0px;
+    }
+
+    .sidebar-toc a:hover {
+        background-color: white;
+    }
+
+    .sidebar-toc {
+        margin-left: 4px;
+        width: 25%;
+        float: right;
+        color: gray;
+        background: lightgray;
+        border: 4px solid #fff;
+        font-size: 0.90em;
+    }
+
+    .sidebar-toc ul {
+        padding-left: 2em;
+    }
+
+</style>
+
+<div id="SBTOC" class="sidebar-toc">
+
+</div>

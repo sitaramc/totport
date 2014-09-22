@@ -21,6 +21,12 @@ TOTP, and then use ssh port forwarding to enable selective access.
 
 ----
 
+The `totp` program which is part of `totport` can also be used as a TOTP
+backend for any application that can make system() calls.  It has a very
+[simple but powerful API](totp.html).
+
+----
+
 The basic idea (of having a validate step making some kind of a backend change
 to enable the next action) is inspired by Konstantin's recent addition of
 [2-factor authentication][gl2fa] to [gitolite][gl].  Thanks Konstantin!
