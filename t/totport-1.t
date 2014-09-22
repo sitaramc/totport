@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 56
+plan 58
 
 # setup
 
@@ -91,14 +91,15 @@ tail -5 ~/totport.log
 
 ./totport sita0 123
     !ok
+    /hi sita0, you may use.../
     /user 'sita0' does not exist/
-    /totp error/
+    /totp database out of sync with authkeys/
 
 tail -5 ~/totport.log
     ok
     /20..-..-..\...:..:.. \d+ == ARGV ==: sita0 123/
     /20..-..-..\...:..:.. \d+ valid access user=sita0 validated-ip=123 from=/
-    /20..-..-..\...:..:.. \d+ FATAL: totp error/
+    /20..-..-..\...:..:.. \d+ FATAL: totp database out of sync with authkeys/
 
 ./totport sita1
     ok
@@ -110,6 +111,7 @@ tail -5 ~/totport.log
 
 ./totport sita1 123
     ok
+    /hi sita1, you may use.../
 
 tail -5 ~/totport.log
     ok

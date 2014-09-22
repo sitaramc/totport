@@ -1,6 +1,13 @@
 #!/usr/bin/env tsh
 
-plan 65
+plan 89
+
+# this test is time sensitive; if you start it at a time that is too close to
+# a 30-second mark, one of the tests will fail.  We need to start it between
+# the 0-10 seconds after a 30-second mark.
+
+# for best results, start the entire "prove" on a 30-second mark, and it'll
+# all work out
 
 # setup
 
@@ -9,12 +16,15 @@ echo $TOTPORT_TEST
 
 ./totp -u sita1 last_ts =
     ok
+    /ok # user 'sita1' updated/
 
 ./totp -u sita2 last_ts = 
     ok
+    /ok # user 'sita2' updated/
 
 ./totp -u sita5 last_ts = 
     ok
+    /ok # user 'sita5' updated/
 
 cp ~/totp.sqlite3 ~/totp.sql3bkp
     ok
@@ -29,22 +39,28 @@ rm junk.?
 
 ./totp -u sita1 ports =
     ok
+    /ok # user 'sita1' updated/
 
 t/try-val 1 2 sha1 -1
     !ok
+    /ok # totp is valid/
     /no valid ports defined for 'sita1', why bother validating/
 
 ./totp -u sita1 last_ts =
     ok
+    /ok # user 'sita1' updated/
 
 ./totp -u sita1 ports = GIT1
     ok
+    /ok # user 'sita1' updated/
 
 ./totp -u sita2 ports = GIT1,GIT2
     ok
+    /ok # user 'sita2' updated/
 
 ./totp -u sita5 ports = MAIL,WEB1
     ok
+    /ok # user 'sita5' updated/
 
 ./totp -d sita1
     ok
@@ -76,6 +92,7 @@ rm -f ~/keydir/sita1.pub
 
 t/try-val 1 2 sha1 -1 1
     !ok
+    /ok # totp is valid/
     /open /home/\w+/keydir/sita1.pub failed: No such file or directory/
 
 cp t/keys/sita*.pub ~/keydir
@@ -102,9 +119,11 @@ rm junk.?
 
 t/try-val 1 3 sha1 -1 1
     ok
+    /ok # totp is valid/
     /validated 'sita1' from '1.2.1.1'/
 
 t/try-val 2 5 sha256 5 1
+    !ok
     /not ok # sita2 \d+ failed at 1\d{9}/
     /totp not ok/
 
@@ -116,9 +135,12 @@ sleep 1
 
 t/try-val 1 3 sha1 0 2
     ok
+    /ok # totp is valid/
     /validated 'sita1' from '1.2.1.2'/
 
 t/try-val 2 5 sha256 -2 2
+    ok
+    /ok # totp is valid/
     /validated 'sita2' from '1.2.2.2'/
 
 cat ~/.ssh/authorized_keys
@@ -133,6 +155,8 @@ t/try-val 1 3 sha1 -1 3
     /totp not ok/
 
 t/try-val 2 5 sha256 0 3
+    ok
+    /ok # totp is valid/
     /validated 'sita2' from '1.2.2.3'/
 
 cat ~/.ssh/authorized_keys
@@ -143,9 +167,11 @@ sleep 1
 
 t/try-val 1 3 sha1 1 4
     ok
+    /ok # totp is valid/
     /validated 'sita1' from '1.2.1.4'/
 
 t/try-val 2 5 sha256 -1 4
+    !ok
     /not ok # totp reused or older totp used/
     /totp not ok/
 
@@ -161,6 +187,8 @@ t/try-val 1 3 sha1 3 5
     /totp not ok/
 
 t/try-val 2 5 sha256 1 5
+    ok
+    /ok # totp is valid/
     /validated 'sita2' from '1.2.2.5'/
 
 cat ~/.ssh/authorized_keys
@@ -170,11 +198,14 @@ cat ~/.ssh/authorized_keys
 sleep 1
 
 t/try-val 5 5 sha512 1 1
+    ok
+    /ok # totp is valid/
     /validated 'sita5' from '1.2.5.1'/
 
 sleep 1
 
 t/try-val 5 5 sha512 0 2
+    !ok
     /not ok # totp reused or older totp used/
     /totp not ok/
 

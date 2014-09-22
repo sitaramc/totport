@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 48
+plan 51
 
 ## dump
 
@@ -17,19 +17,22 @@ ls ~/totp.log ~/totp.sqlite3
 
 ./totp -a sita2
     ok
+    /ok # user 'sita2' added/
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
     /qrencode -tANSI -m1 -o- otpauth...totp.*secret=[A-Z2-7]+/
 
 ./totp -u sita2 ts_win = 2
-    ok
+    /ok # user 'sita2' updated/
 
 ./totp -a sita3
     ok
+    /ok # user 'sita3' added/
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
     /qrencode -tANSI -m1 -o- otpauth...totp.*secret=[A-Z2-7]+/
 
 ./totp -a sita4
     ok
+    /ok # user 'sita4' added/
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
     /qrencode -tANSI -m1 -o- otpauth...totp.*secret=[A-Z2-7]+/
 

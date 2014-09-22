@@ -94,7 +94,7 @@ if ( $ip and not $ENV{SSH_ORIGINAL_COMMAND} ) {
 
     # sanity check to make sure user is present
     my $ports = `$TOTP -d $user ports`;
-    _die 'totp error' if ${^CHILD_ERROR_NATIVE};
+    _die 'totp database out of sync with authkeys' if ${^CHILD_ERROR_NATIVE};
 
     sleep 2;
     sleep unless $ENV{TOTPORT_TEST};

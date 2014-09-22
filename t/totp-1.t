@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 116
+plan 124
 
 ## user management
 
@@ -35,6 +35,7 @@ tail -2 ~/totp.log
 
 ./totp -a sita1
     ok
+    /ok # user 'sita1' added/
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
     /qrencode -tANSI -m1 -o- otpauth...totp.*secret=[A-Z2-7]+/
 
@@ -51,7 +52,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 ./totp -a sita1
     !ok
-    /user 'sita1' already enrolled/
+    /not ok # user 'sita1' already enrolled/
 
 tail -2 ~/totp.log
     ok
@@ -89,14 +90,15 @@ tail -2 ~/totp.log
 
 ./totp --del sita1 ABCDEFGHIJKLMNOP/
     !ok
-    /invalid user/secret/
+    /not ok # invalid user/secret/
 
 ./totp --del sita9 ABCDEFGHIJKLMNOP/
     !ok
-    /user 'sita9' does not exist/
+    /not ok # user 'sita9' does not exist/
 
 ./totp --del sita1 `hashlite -d ~/totp.sqlite3 -t totp_users get sita1 secret`
     ok
+    /ok # user 'sita1' deleted/
 
 tail -2 ~/totp.log
     ok
@@ -113,6 +115,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 ./totp -a sita2
     ok
+    /ok # user 'sita2' added/
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
     /qrencode -tANSI -m1 -o- otpauth...totp.*secret=[A-Z2-7]+/
 
@@ -126,6 +129,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 ./totp -u sita1 foo = bar
     ok
+    /ok # user 'sita1' updated/
     /user 'sita1' does not exist, creating.../
 
 tail -3 ~/totp.log
@@ -136,6 +140,7 @@ tail -3 ~/totp.log
 
 ./totp -u sita2 foo = bar
     ok
+    /ok # user 'sita2' updated/
 
 tail -2 ~/totp.log
     ok
@@ -156,6 +161,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 ./totp -u sita2 ts_win = 2
     ok
+    /ok # user 'sita2' updated/
 
 hashlite -d ~/totp.sqlite3 dump
     ok
@@ -173,14 +179,15 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 ./totp -u sita2 ts_win = ''
     !ok
-    /sorry Dave, I can.t let you do that/
+    /not ok # sorry Dave, I can.t let you do that/
 
 ./totp -u sita2 ts_win =
     !ok
-    /sorry Dave, I can.t let you do that/
+    /not ok # sorry Dave, I can.t let you do that/
 
 ./totp -u sita2 foo = ''
     ok
+    /ok # user 'sita2' updated/
 
 hashlite -d ~/totp.sqlite3 dump
     ok
@@ -196,6 +203,7 @@ hashlite -d ~/totp.sqlite3 dump | wc -l
 
 ./totp -u sita2 foo =
     ok
+    /ok # user 'sita2' updated/
 
 hashlite -d ~/totp.sqlite3 dump
     ok

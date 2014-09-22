@@ -39,14 +39,14 @@ my $op = shift || '-h';
 usage() if $op eq '-h' or $op !~ /^-/;
 
 my %dt = (
-    '-c'    => \&check_totp,
-    '-s'    => \&show_totp,
+    '-c' => \&check_totp,
+    '-s' => \&show_totp,
 
     '-a'    => \&add_user,
     '--del' => \&del_user,
     '-u'    => \&upd_user,
 
-    '-d'    => \&_dump,
+    '-d' => \&_dump,
 );
 
 usage() unless exists $dt{$op};
@@ -68,11 +68,12 @@ sub usage {
 
     say '
     totp -c username TOTP       # check totp for user
-    totp -s secret [...]        # show totp for secret [seconds] [window] [alg]
 
     totp -a username            # add user, generates and prints secret
-    totp --del username         # delete user
     totp -u username foo = bar  # sets arbitrary key/value for user
+    totp --del username         # delete user
+
+    totp -s secret [...]        # show totp for secret [seconds] [window] [alg]
     totp -d username [field]    # dump one/all fields for user
     totp -d                     # dump all data for all users
 
@@ -94,6 +95,17 @@ delete arbitrary keys added by "-u", and so on.
     exit 1;
 }
 
+sub ok {
+    say join( " ", "ok #", @_ );
+    _log(@_);
+}
+
+sub not_ok {
+    say join( " ", "not ok #", @_ );
+    _log( 'FATAL:', @_ );
+    exit 1;
+}
+
 # ----------------------------------------------------------------------
 
 # user management
@@ -103,7 +115,7 @@ delete arbitrary keys added by "-u", and so on.
     sub add_user {
         my $user = shift or _die "need username";
 
-        _die "user '$user' already enrolled" if tu_get( $user, 'secret' );
+        not_ok "user '$user' already enrolled" if tu_get( $user, 'secret' );
 
         # generate random secret
         my $secret = MIME::Base32::encode(`openssl rand 20`);
@@ -113,21 +125,21 @@ delete arbitrary keys added by "-u", and so on.
         tu_set( $user, 'secret', $secret );
         tu_set( $user, 'ts_win', 1 );
 
+        ok "user '$user' added";
+
         # qrcode anyone?
         qrinfo( $user, $secret );
-
-        _log("user '$user' added");
     }
 
     sub del_user {
         my $user = shift;
         my $secret = shift or _die "need username and secret";
 
-        _die "user '$user' does not exist" unless tu_exists($user);
-        _die "invalid user/secret" unless $secret eq tu_get( $user, 'secret' );
+        not_ok "user '$user' does not exist" unless tu_exists($user);
+        not_ok "invalid user/secret" unless $secret eq tu_get( $user, 'secret' );
 
         tu_del($user);
-        _log("user '$user' deleted");
+        ok "user '$user' deleted";
     }
 
     sub upd_user {
@@ -140,10 +152,10 @@ delete arbitrary keys added by "-u", and so on.
         _warn "user '$user' does not exist, creating..." unless tu_exists($user);
 
         # don't let him delete the keys that totp cares about
-        _die "sorry Dave, I can't let you do that" if not $val and ( $key eq 'secret' or $key eq 'ts_win' );
+        not_ok "sorry Dave, I can't let you do that" if not $val and ( $key eq 'secret' or $key eq 'ts_win' );
 
         tu_set( $user, $key, $val );
-        _log("user '$user' updated");
+        ok "user '$user' updated";
     }
 }
 
@@ -155,7 +167,7 @@ delete arbitrary keys added by "-u", and so on.
 
     sub check_totp {
         my ( $user, $totp ) = @_;
-        _die "user '$user' does not exist" unless tu_exists($user);
+        not_ok "user '$user' does not exist" unless tu_exists($user);
 
         my $secret = tu_get( $user, 'secret' );
         my $tsw    = tu_get( $user, 'ts_win' );
@@ -170,21 +182,17 @@ delete arbitrary keys added by "-u", and so on.
 
                 my $this_ts = ( int( $CT / 30 ) + $ts );
                 unless ( $this_ts > ( tu_get( $user, 'last_ts' ) || 0 ) ) {
-                    say "not ok # totp reused or older totp used";
-                    _log("not ok # totp reused or older totp used");
-                    exit 1;
+                    not_ok "totp reused or older totp used";
                 }
 
                 # all ok; save "last timestep" and return OK
                 tu_set( $user, 'last_ts', $this_ts );
-                _log("ok");
 
+                ok "totp is valid";
                 exit 0;
             }
         }
-        say "LOG not ok # $user $totp failed at $CT";
-        _log("LOG not ok # $user $totp failed at $CT");
-        exit 1;
+        not_ok "$user $totp failed at $CT";
     }
 
     # if a user has a 6-digit-only TOTP software (as opposed to 8-digits) we
@@ -348,4 +356,3 @@ Option 3: type in:
 ";
     }
 }
-

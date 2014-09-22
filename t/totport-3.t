@@ -1,14 +1,16 @@
 #!/usr/bin/env tsh
 
-plan 21
+plan 25
 
 # setup
 
 ./totp -u sita1 last_ts = 
     ok
+    /ok # user 'sita1' updated/
 
 ./totp -u sita2 last_ts = 
     ok
+    /ok # user 'sita2' updated/
 
 rm -rf junk.? ~/validated_keys/*
     ok
@@ -17,6 +19,7 @@ rm -rf junk.? ~/validated_keys/*
 
 t/try-val 1 3 sha1 0 1
     ok
+    /ok # totp is valid/
     /validated 'sita1' from '1.2.1.1'/
 
 sleep 5
@@ -24,6 +27,7 @@ sleep 5
 
 t/try-val 2 5 sha256 -2 2
     ok
+    /ok # totp is valid/
     /validated 'sita2' from '1.2.2.2'/
 
 find ~/validated_keys

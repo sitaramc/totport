@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 68
+plan 79
 
 ## check mode setup and basic tests
 
@@ -17,29 +17,37 @@ ls ~/totp.log ~/totp.sqlite3
 
 ./totp -a sita1
     ok
+    /ok # user 'sita1' added/
     /table does not exist\; creating.../
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
 
 ./totp -a sita2
     ok
+    /ok # user 'sita2' added/
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
 
 ./totp -a sita5
     ok
+    /ok # user 'sita5' added/
     /http://127.0.0.1:3536/qr/[A-Z2-7]+/
 
 ./totp -u sita2 ts_win = 2
     ok
+    /ok # user 'sita2' updated/
 
 ./totp -u sita5 ts_win = 5
     ok
+    /ok # user 'sita5' updated/
 
 ./totp -u sita1 secret = GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ
     ok
+    /ok # user 'sita1' updated/
 ./totp -u sita2 secret = GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA
     ok
+    /ok # user 'sita2' updated/
 ./totp -u sita5 secret = GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA
     ok
+    /ok # user 'sita5' updated/
 
 ./totp -s `hashlite -d ~/totp.sqlite3 -t totp_users get sita1 secret` 59
     ok
@@ -59,13 +67,16 @@ ls ~/totp.log ~/totp.sqlite3
 
 ./totp -u sita2 alg = sha256
     ok
+    /ok # user 'sita2' updated/
 
 ./totp -u sita3 alg = sha512
     ok
+    /ok # user 'sita3' updated/
     /user 'sita3' does not exist, creating.../
 
 ./totp -u sita5 alg = sha512
     ok
+    /ok # user 'sita5' updated/
 
 ./totp -d
     ok
