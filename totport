@@ -158,7 +158,9 @@ sub validate {
     my $use_by = time() + ( `$TOTP -d $user valid_for` || 20 ) * 60;
 
     # strings like "MAIL", "GIT1", or "MAIL,GIT1" (which contains both), etc...
-    my $ports = `$TOTP -d $user ports`;
+    my $ports = `$TOTP -d $user ports` || '';
+    $ports .= ",DEFAULT" if $port_expander{DEFAULT} and not $ports =~ /\bDEFAULT\b/;
+
     _die "no valid ports defined for '$user', why bother validating?" unless $ports;
     _die "invalid format '$ports'" unless $ports =~ /^(\w+)(,\w+)*$/;
 
