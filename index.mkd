@@ -34,7 +34,7 @@ apps this is fine.)@@
 
 `totport` works by creating an additional authorized keys line with
 appropriate "from" and "permitopen" options, when it receives a valid TOTP
-passcode.  Subsequent connections from that validated IP address will permit
+authcode.  Subsequent connections from that validated IP address will permit
 forwarding to those hosts and ports.
 
 The basic idea (of having a validate step making some kind of a backend change
@@ -46,7 +46,7 @@ to enable the next action) is inspired by Konstantin's recent addition of
 
 @@red(Of course, one downside of this very simple type of TOTP is that the
 user needs to have an Android phone or tab handy.  While it is possible to
-compute the TOTP passcodes on the same laptop or desktop that the user is
+compute the TOTP authcodes on the same laptop or desktop that the user is
 using to log on, this totally defeats the purpose of two factor
 authentication, so don't do that!)@@
 
@@ -242,7 +242,7 @@ Next, the actual usage:
 
 ## token validity and expiry
 
-Once a valid passcode has been submitted, the next connection to the same
+Once a valid authcode has been submitted, the next connection to the same
 user/server (`totport@host`), with the port forward options specified, should
 be sent within 20 minutes.  After 20 minutes, the entry could be purged and
 the auth keys file rebuilt at any time.
@@ -345,7 +345,7 @@ pages][ghssh1] are useful here.
 
 ## (user) securely downloading the TOTP "secret"
 
-First, let's remind ourselves that the TOTP passcode must come from a
+First, let's remind ourselves that the TOTP authcode must come from a
 **different device** than the PC which contains your ssh keypair.  Although it
 is quite easy to do that also on the same box, it is @@red(**most strongly
 recommended not to do so**)@@.  In fact, don't even be tempted to **store**
