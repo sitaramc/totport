@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# wait till $SECONDS is 1 or 2 (mod 30)
+
+typeset -i i
+i=`date +%S`
+(( i = i % 30 ))
+(( i = 31 - i ))
+[[ $i -eq 31 ]] && { sleep 1; exit 0; }
+[[ $i -eq 30 ]] && exit 0
+[[ $i -eq 29 ]] && exit 0
+sleep $i

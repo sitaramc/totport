@@ -35,7 +35,7 @@ find ~/validated_keys
     /sita1/
     /sita2/
 
-t/mock.pl `perl -e 'print time()+1196'` ./totport rebuild
+t/mock.pl `perl -e 'print time()+2396'` ./totport rebuild
     !/./
 
 tail -3 ~/totport.log
@@ -44,7 +44,7 @@ tail -3 ~/totport.log
     /20..-..-..\...:..:.. \d+ removed directory: ‘/home/\w+/validated_keys/1\d{9}’/
     !/sita2/
 
-t/mock.pl `perl -e 'print time()+1201'` ./totport rebuild
+t/mock.pl `perl -e 'print time()+2401'` ./totport rebuild
     !/./
 
 tail -3 ~/totport.log

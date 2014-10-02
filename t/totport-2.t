@@ -1,6 +1,6 @@
 #!/usr/bin/env tsh
 
-plan 89
+plan 90
 
 # this test is time sensitive; if you start it at a time that is too close to
 # a 30-second mark, one of the tests will fail.  We need to start it between
@@ -10,6 +10,11 @@ plan 89
 # all work out
 
 # setup
+
+# wait till the seconds hits "01" (mod 30), since this test script is so
+# time-sensitive
+t/on-my-mark
+    ok
 
 echo $TOTPORT_TEST
     /y/ or die "please see t/README.mkd"
@@ -76,7 +81,7 @@ t/try-val 1 2 sha1 -1
 
 ./totp -d | wc -l
     ok
-    /28/
+    /29/
 
 cp ~/totp.sqlite3 ~/totp.sql3bkp
     ok

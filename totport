@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+# TODO: IPv6
 # ----------------------------------------------------------------------
 # LOCAL CONFIGURATION
 
@@ -128,14 +129,14 @@ if ( ( $ENV{SSH_ORIGINAL_COMMAND} || '' ) =~ /^val (\d+)$/ ) {
     } else {
         # ...and false is "OK"
         _log("validating '$conn_ip' for '$user' with totp '$otp'");
-        validate( $user, $conn_ip );
-        say STDERR "validated '$user' from '$conn_ip'";
+        my $valm = validate( $user, $conn_ip );
+        say STDERR "validated '$user' from '$conn_ip'; IP valid for $valm minutes";
         rebuild_afk();
         exit 0;
     }
 }
 
-_log();     # triggers logging of argv without logging anything else
+_log();    # triggers logging of argv without logging anything else
 rebuild_afk();
 say STDERR "hello $user, you're authenticated but your IP is not validated";
 say STDERR "commands:\n\tenroll\n\tqrcode\n\tval <TOTP>";
@@ -154,8 +155,9 @@ sub validate {
         unlink $ev;
     }
 
-    # "use within 20 minutes" translates to "use by time() + 1200 seconds"
-    my $use_by = time() + ( `$TOTP -d $user valid_for` || 20 ) * 60;
+    # "valid for 20 minutes" translates to "valid for time() + 1200 seconds"
+    my $valm = valid_for( $user, $conn_ip );
+    my $use_by = time() + $valm * 60;
 
     # strings like "MAIL", "GIT1", or "MAIL,GIT1" (which contains both), etc...
     my $ports = `$TOTP -d $user ports` || '';
@@ -173,6 +175,8 @@ sub validate {
     my $pub = slurp("$KEYDIR/$user.pub");
     mkdir $use_by;    # yes Virginia, a directory name like '1410764927'
     _print( "$use_by/$user", "$option $pub" );
+
+    return $valm;
 }
 
 sub rebuild_afk {
@@ -230,4 +234,52 @@ sub conn_ip {
     my $ip;
     ( $ip = $ENV{SSH_CONNECTION} || '' ) =~ s/ .*//;
     return $ip;
+}
+
+# compute how long this IP should remain valid.  The idea is to base this on
+# how often have we seen this IP before -- the more often we have, the more
+# time it is given (subject to some cap).
+
+# EXPERIMENTAL CODE.  Contains some constants -- 5, 150... -- to be made more
+# properly customisable once we work the kinks out.
+
+sub valid_for {
+    my ( $user, $conn_ip ) = @_;
+
+    # base validity in minutes
+    my $base = ( `$TOTP -d $user valid_for` || 20 );
+
+    my $recent_IPs = ( `$TOTP -d $user recent_IPs` || '' );
+    my %hits;
+    my $lfu = '';    # least frequently used IP
+
+    my $count = 0;
+    while ( $recent_IPs =~ /\b([\d.]+)=(\d+)\b/g ) {
+        my ( $ip, $hits ) = ( $1, $2 );
+        $hits{$ip} = $hits;
+        $count++;
+
+        # current IP is never a candidate for LFU
+        next if $ip eq $conn_ip;
+
+        $lfu ||= $ip;
+        $lfu = $ip if $hits{$lfu} and $hits{$lfu} > $hits;
+    }
+
+    # bump count if current IP was not seen before
+    $count++ unless $hits{$conn_ip};
+    # purge LFU if there would then be more than 5
+    delete $hits{$lfu} if $lfu and $count > 5;
+
+    # bump hits for connected IP but set a cap of 150 on the hits; if $base is
+    # the default (20 minutes), this is 50 hours; just a bit over 2 days
+    $hits{$conn_ip}++;
+    $hits{$conn_ip} = 150 if $hits{$conn_ip} > 150;
+
+    # write the new counts out to the database
+    $recent_IPs = join " ", map { "$_=$hits{$_}" } sort keys %hits;
+    system( $TOTP, '-u', $user, 'recent_IPs', '=', $recent_IPs ) and _die "update recent_IPs failed";
+
+    # remember each hit is worth $base minutes of validity!
+    return $base * $hits{$conn_ip};
 }
