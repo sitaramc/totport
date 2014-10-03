@@ -1,9 +1,14 @@
+<!-- options: toc -->
+
 % generalised TOTP API from the command line
 
-# The API
+The `totp` program, which is part of `totport` provides a simple, command-line
+based, TOTP API for *any* application that can make system() calls.  This page
+has a description of this API.
 
-The `totp` program, which is part of `totport` can be used as a TOTP backend
-for any application that can make system() calls.
+You may want to read the [TOTP ideas](totp-ideas.html) page also.
+
+# the API
 
 The API is simple:
 

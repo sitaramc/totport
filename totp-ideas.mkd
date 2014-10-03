@@ -1,0 +1,142 @@
+<!-- options: toc -->
+
+% totp -- the power behind totport
+
+## generalised view of `totport`
+
+You can view `totport` like this:
+
+![](tp1-1.png)
+
+But if you make some generalisations, you can look at it like this, where
+"request meta" is some meta information that can identify a valid request:
+
+![](tp1-2.png)
+
+So, for example, if the gatekeeper was an iptables firewall, the "request
+meta" could be source IP or source IP and destination port, and the gatekeeper
+control commands could be iptables ACCEPT requests.  (Similarly if the
+gatekeeper was tcpwrappers, the control commands would be modifications to
+various files in /etc).
+
+The assumptions needed for this to work are:
+
+*   The "request meta" carries sufficient information to distinguish between
+    good and bad requests, and corresponding gatekeeper control is possible.
+
+*   Requests cannot forge the "request meta" information in their requests to
+    the gatekeeper.  Either that is fundamental to the request (like IP
+    address) or is guaranteed by independently authenticating the sender.
+
+### wait what?
+
+"independently authenticating the sender"?  I thought TOTP *was* an
+authentication mechanism.
+
+Well yeah, but we're abusing it here to turn it into a time-limited
+authorisation scheme.  By submitting a valid TOTP code and associating it with
+a specific "request meta", you're saying "requests satisfying this criterion
+are authorised to (do something)".
+
+In our scenario, the request meta is "source IP", which in TCP, cannot be
+forged, and even more so when going over ssh.  Gatekeeper control using
+request meta is adding a `from="IP"` option to the authkeys file.
+
+## delegations
+
+
+
+## separating the request and the request meta
+
+Suppose the gatekeeper was flickr, which stores your pictures.  And suppose
+you ask a photo-printing service to pick up a specific photo, and print it.
+
+@@gray(((I can see some people are getting a strange feeling of deja vu
+here!))@@
+
+*   The printing service tells you it needs a one-time password.
+
+*   You take your one-time password for your flickr account's TOTP setup from
+    your mobile phone or device.
+
+*   You then type it into a special "secondary TOTP generator" window.  This
+    generator stores no secrets, so it can be a standalone app anywhere.
+
+*   This generator takes in the main site's one-time password (obtained from
+    your mobile phone or device), uses that as the key, then takes the
+    filename you are giving permission to, uses that as "data", and produces
+    its own TOTP.
+
+*   You give that code to the printing site.
+
+## comparison with OAuth
+
+<!-- the end -->
+
+.aa tp1-1.png
+
+    ssh connections
+    from various IP 
+    addresses
+            +-------------------------+
+    ------->| ssh daemon              | connections from
+            |  Uses authorized keys   | permitted source IPs
+    ------->|  file to decide whether +-------->
+            |  to allow or deny access|
+    ------->|  based on source IP     +-------->
+            |cPNK                     |
+            +-------------------------+
+                                 ^
+                                 |
+      | | source IP              |
+      | | userid                 |
+      | | TOTP authcode          |
+      v v                        |
+    +----------------------+     |
+    |  totport             |     |
+    |                      |     |
+    |   Calls totp to      |     |
+ +--+   check user and     |     |
+ |  |   authcode           |     |
+ |  |                      |     |
+ |  |   updates authkeys   +-----+
+ |  |   file               |
+ |  | cGRE                 |
+ |  +----------------------+
+ |
+ |  +----------------------------+
+ |  |  totp                      |
+ +->|                            |
+    |   checks authcode for user |
+    |   returns ok/not ok        |
+    |cBLU                        |
+    +----------------------------+
+
+.end
+
+.aa tp1-2.png
+
+    requests
+            +-----------------+
+    ------->| gatekeeper      | permitted requests
+    ------->|cPNK             +-------->
+            +-----------------+
+                           ^
+                           |
+      | | request meta     |
+      | | userid           |
+      | | totp authcode    |
+      v v                  | gatekeeper
+    +------------------+   | control
+ +--+ totp enabler     +---+ commands
+ |  | cGRE             |
+ |  +------------------+
+ |
+ |  +---------+
+ +->| totp    |
+    |cBLU     |
+    +---------+
+
+.end
+
+
