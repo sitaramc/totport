@@ -338,19 +338,22 @@ sub not_ok {
         say STDERR "
 A new secret has been generated for user '$user'.
 
-There are 3 ways in which you can get this into your Android mobile or tab,
-summarised below.  You may need to read the \"securely downloading the TOTP
-secret\" section in http://gitolite.com/totport for more details.  Also, your
-admin may have given you actual IP addresses or port numbers.
+There are 3 ways in which you can get this into the FreeOTP app on your
+Android mobile or tab, summarised below.  You may need to read the \"securely
+downloading the TOTP secret\" section in http://gitolite.com/totport for more
+details.  (Your admin may have given you actual IP addresses or port numbers.)
 
-Option 1: run the ssh command and then browse to the URL:
+Option 1: run the ssh command below, then browse to the URL after that, then
+use the FreeOTP app's QR code scan feature to scan the code from the browser:
     ssh -L 3536:127.0.0.1:3536 totport\@host qrcode
     http://127.0.0.1:3536/qr/$secret
 
-Option 2: run:
+Option 2: run the following command, then use the FreeOTP app's QR code scan
+feature to scan the code from the screen:
     qrencode -tANSI -m1 -o- otpauth://totp/$user\@$hn?secret=$secret
 
-Option 3: type in:
+Option 3: type the code manually into your FreeOTP app after selecting the
+option to manually create a new key:
     $readable
 
 ";
