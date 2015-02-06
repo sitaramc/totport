@@ -98,7 +98,10 @@ if ( $ip and not $ENV{SSH_ORIGINAL_COMMAND} ) {
     _die 'totp database out of sync with authkeys' if ${^CHILD_ERROR_NATIVE};
 
     sleep 2;
-    sleep unless $ENV{TOTPORT_TEST};
+    exit 0 if $ENV{TOTPORT_TEST};
+
+    sleep 10*60*60;
+    say STDERR "goodbye";
     exit 0;
 }
 
