@@ -119,6 +119,9 @@ sub not_ok {
 
         # generate random secret
         my $secret = MIME::Base32::encode(`openssl rand 20`);
+        while (length($secret) < 20) {
+            $secret = MIME::Base32::encode(`openssl rand 20`);
+        }
 
         # add to db.  We just use defaults for the other parameters; the admin
         # should use '-u' later if needed.
