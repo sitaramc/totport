@@ -1,3 +1,8 @@
+<!--
+    options: toc
+    to: html-N
+-->
+
 % generalised TOTP API from the command line
 
 # The API

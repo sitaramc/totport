@@ -1,4 +1,7 @@
-<!-- options: toc -->
+<!--
+    options: toc
+    to: html-N
+-->
 
 % totport -- TOTP anywhere, any service
 
