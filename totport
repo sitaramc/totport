@@ -45,6 +45,7 @@ use Data::Dumper;
 $Data::Dumper::Terse    = 1;
 $Data::Dumper::Indent   = 1;
 $Data::Dumper::Sortkeys = 1;
+use File::Basename;
 
 use Utils;
 
@@ -153,9 +154,10 @@ sub validate {
     mkdir $VAL_KEYS;
     _chdir $VAL_KEYS;
 
-    for my $ev ( glob("*/$user.pub") ) {
+    for my $ev ( glob("*/$user") ) {
         _warn "removing existing validation '$ev'";
         unlink $ev;
+        rmdir(dirname($ev));
     }
 
     # "valid for 20 minutes" translates to "valid for time() + 1200 seconds"
