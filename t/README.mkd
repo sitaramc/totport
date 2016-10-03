@@ -1,0 +1,4 @@
+It'll clobber all kinds of stuff in ~/.ssh and other such places, but if
+you're game:
+
+    TOTPORT_TEST=y prove
