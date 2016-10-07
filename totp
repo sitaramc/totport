@@ -184,9 +184,12 @@ sub not_ok {
                 # timestep this user used
 
                 my $this_ts = ( int( $CT / 30 ) + $ts );
-                unless ( $this_ts > ( tu_get( $user, 'last_ts' ) || 0 ) ) {
+                my $last_ts = tu_get( $user, 'last_ts' ) || 0;
+                unless ( $this_ts > $last_ts ) {
                     not_ok "totp reused or older totp used";
                 }
+
+                _log("user $user revalidated after " . int(($this_ts - $last_ts)/2) . " minutes");
 
                 # all ok; save "last timestep" and return OK
                 tu_set( $user, 'last_ts', $this_ts );
