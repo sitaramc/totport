@@ -10,7 +10,9 @@ use warnings;
 # ----------------------------------------------------------------------
 # LOCAL CONFIGURATION ITEMS
 
-use lib "$ENV{HOME}/bin";    # location of HashLite.pm and Utils.pm
+use FindBin;
+use lib $FindBin::RealBin;      # location of HashLite.pm and Utils.pm
+
 my $DBNAME    = "$ENV{HOME}/totp.sqlite3";    # location of main database
 my $TABLENAME = "totp_users";                 # our table in the database
 my $LOGF      = "$ENV{HOME}/totp.log";
